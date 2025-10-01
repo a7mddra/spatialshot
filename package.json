@@ -1,0 +1,17 @@
+{
+  "name": "draw-on-screen",
+  "version": "1.0.0",
+  "description": "An app to freeze the screen and draw on it.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "dependencies": {
+    "sharp": "^0.33.3"
+  },
+  "devDependencies": {
+    "electron": "^28.3.3",
+    "electron-builder": "^24.13.3"
+  }
+}
