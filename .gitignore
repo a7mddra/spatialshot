@@ -1,3 +1,6 @@
 app/node_modules
-app/dist
 app/package-lock.json
+app/output
+app/dist
+app/ai-widget/node_modules
+app/ai-widget/package-lock.json

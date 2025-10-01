@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' data:;">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#1e1e1e" />
+  <link rel="stylesheet" href="./style.css" />
+  <title>Emoji Picker</title>
+</head>
+<body>
+  <div class="emoji-picker" role="application" aria-label="Emoji picker">
+    <!-- macOS Traffic Light Buttons -->
+    <div class="traffic-lights">
+      <button class="traffic-light-btn close-btn" title="Close" aria-label="Close picker"></button>
+      <button class="traffic-light-btn minimize-btn" title="Minimize" aria-label="Minimize picker"></button>
+      <button class="traffic-light-btn maximize-btn" title="Maximize" aria-label="Maximize picker"></button>
+    </div>
+
+    <div class="search-container" role="region" aria-label="Search">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M11 11L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Search emojis..."
+        aria-label="Search emojis"
+        autocomplete="off"
+      />
+    </div>
+
+    <div class="suggestions-container" id="suggestions-container" role="listbox" aria-label="Suggestions"></div>
+
+    <div class="emoji-content" id="emoji-content" role="list" aria-label="Emoji results">
+    </div>
+
+    <div class="skin-tone-popover" id="skin-tone-popover" role="dialog" aria-modal="false" aria-hidden="true">
+      <div class="skin-tone-options" id="skin-tone-options" role="list"></div>
+    </div>
+
+    <div class="category-nav" role="navigation" aria-label="Categories">
+        <button class="cat-btn" data-category="recent" title="Recently Used" aria-label="Recently used">
+            <img src="../assets/nav/r.svg" alt="" class="icon-normal">
+            <img src="../assets/nav-active/R.svg" alt="" class="icon-active">
+        </button>
+        <button class="cat-btn active" data-category="smileys and people" title="Smileys & People" aria-label="Smileys and people">
+            <img src="../assets/nav/sp.svg" alt="" class="icon-normal">
+            <img src="../assets/nav-active/SP.svg" alt="" class="icon-active">
+        </button>
+        <button class="cat-btn" data-category="animals and nature" title="Animals & Nature" aria-label="Animals and nature">
+            <img src="../assets/nav/an.svg" alt="" class="icon-normal">
+            <img src="../assets/nav-active/AN.svg" alt="" class="icon-active">
+        </button>
+        <button class="cat-btn" data-category="food and drink" title="Food & Drink" aria-label="Food and drink">
+            <img src="../assets/nav/fd.svg" alt="" class="icon-normal">
+            <img src="../assets/nav-active/FD.svg" alt="" class="icon-active">
+        </button>
+        <button class="cat-btn" data-category="activities" title="Activities" aria-label="Activities">
+            <img src="../assets/nav/a.svg" alt="" class="icon-normal">
+            <img src="../assets/nav-active/A.svg" alt="" class="icon-active">
+        </button>
+        <button class="cat-btn" data-category="travel and places" title="Travel & Places" aria-label="Travel and places">
+            <img src="../assets/nav/tp.svg" alt="" class="icon-normal">
+            <img src="../assets/nav-active/TP.svg" alt="" class="icon-active">
+        </button>
+        <button class="cat-btn" data-category="objects" title="Objects" aria-label="Objects">
+            <img src="../assets/nav/o.svg" alt="" class="icon-normal">
+            <img src="../assets/nav-active/O.svg" alt="" class="icon-active">
+        </button>
+        <button class="cat-btn" data-category="symbols" title="Symbols" aria-label="Symbols">
+            <img src="../assets/nav/s.svg" alt="" class="icon-normal">
+            <img src="../assets/nav-active/S.svg" alt="" class="icon-active">
+        </button>
+        <button class="cat-btn" data-category="flags" title="Flags" aria-label="Flags">
+            <img src="../assets/nav/f.svg" alt="" class="icon-normal">
+            <img src="../assets/nav-active/F.svg" alt="" class="icon-active">
+        </button>
+        <button class="cat-btn" data-category="more" title="More" aria-label="More">
+            <img src="../assets/nav/m.svg" alt="" class="icon-normal">
+            <img src="../assets/nav-active/M.svg" alt="" class="icon-active">
+        </button>
+    </div>
+  </div>
+
+  <script type="module" src="./renderer.js"></script>
+</body>
+</html>

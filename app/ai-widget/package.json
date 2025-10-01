@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "emojiz",
+  "version": "1.0.0",
+  "description": "iOS-like emoji picker widget",
+  "homepage": "https://example.com/emojiz",
+  "main": "src/main.js",
+  "author": "a7md <a7mddra@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "dist": "chmod +x build/after-install.sh && electron-builder --linux deb"
+  },
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.a7md.emojiz",
+    "productName": "Emojiz",
+    "directories": {
+      "buildResources": "build"
+    },
+    "files": [
+      "**/*",
+      "!node_modules/*/{CHANGELOG.md,README.md,README,readme.md}",
+      "!dist"
+    ],
+    "linux": {
+      "target": [
+        "deb"
+      ],
+      "icon": "build/icons",
+      "category": "Utility",
+      "executableName": "Emojiz"
+    },
+    "deb": {
+      "afterInstall": "build/after-install.sh",
+      "afterRemove": "build/after-remove.sh"
+    }
+  }
+}

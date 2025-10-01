@@ -5,10 +5,8 @@ const fs = require('fs/promises');
 const os = require('os');
 const sharp = require('sharp');
 
-// Store the screenshot buffer globally to access it for cropping
 let screenshotBuffer = null;
 
-// takeScreenshot now returns the raw image buffer instead of a data URL
 function takeScreenshot() {
     return new Promise((resolve, reject) => {
         const tempPath = path.join(os.tmpdir(), `freeze-screen-${Date.now()}.png`);
@@ -32,8 +30,7 @@ function takeScreenshot() {
 async function createFreezeWindows() {
     try {
         console.log("Taking screenshot with scrot...");
-        screenshotBuffer = await takeScreenshot(); // Store the buffer
-        // Convert the buffer to a data URL for the renderer
+        screenshotBuffer = await takeScreenshot();
         const screenshotDataURL = `data:image/png;base64,${screenshotBuffer.toString('base64')}`;
         
         console.log("Screenshot captured. Creating windows...");
@@ -46,11 +43,13 @@ async function createFreezeWindows() {
                 frame: false, fullscreen: true, alwaysOnTop: true,
                 skipTaskbar: true, show: false,
                 webPreferences: {
-                    preload: path.join(__dirname, 'preload.js'),
+                    // CHANGED: Go up one directory to find preload.js
+                    preload: path.join(__dirname, './preload.js'),
                     contextIsolation: true,
                 }
             });
-            win.loadFile('index.html');
+            // CHANGED: Load index.html from the current directory (src/)
+            win.loadFile(path.join(__dirname, 'index.html'));
             win.webContents.on('did-finish-load', () => {
                 win.webContents.send('screenshot-captured', screenshotDataURL);
             });
@@ -61,7 +60,6 @@ async function createFreezeWindows() {
     }
 }
 
-// When the renderer signals the image is ready, show the window
 ipcMain.on('image-ready', (event) => {
     const senderWindow = BrowserWindow.fromWebContents(event.sender);
     if (senderWindow) {
@@ -70,18 +68,17 @@ ipcMain.on('image-ready', (event) => {
     }
 });
 
-// Listen for the crop-and-save command from the renderer
 ipcMain.on('crop-and-save', async (event, cropData) => {
     if (!screenshotBuffer) {
         console.error('Screenshot buffer not available!');
         return app.quit();
     }
     try {
-        const outputDir = path.join(__dirname, 'output');
+        // CHANGED: Go up one directory for a cleaner output folder
+        const outputDir = path.join(__dirname, '../output');
         await fs.mkdir(outputDir, { recursive: true });
         const outputPath = path.join(outputDir, `crop-${Date.now()}.png`);
         
-        // Use sharp to crop the image buffer
         await sharp(screenshotBuffer)
             .extract({
                 left: Math.round(cropData.x),
@@ -95,15 +92,11 @@ ipcMain.on('crop-and-save', async (event, cropData) => {
     } catch (err) {
         console.error('Failed to crop or save image:', err);
     } finally {
-        // Quit the app after saving or on error
         app.quit();
     }
 });
 
-
 app.whenReady().then(createFreezeWindows);
-
-// We no longer need manual quit shortcuts
 app.on('will-quit', () => {});
 app.on('window-all-closed', () => app.quit());
 if (!app.requestSingleInstanceLock()) {

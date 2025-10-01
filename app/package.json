@@ -1,7 +1,7 @@
 {
   "name": "draw-on-screen",
   "version": "1.0.0",
-  "description": "An app to freeze the screen and draw on it.",
+  "description": "Take screenshots by drawing free shapes on the screen.",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
