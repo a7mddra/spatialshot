@@ -1,6 +1,6 @@
 const { app, BrowserWindow, screen, ipcMain } = require('electron');
 const path = require('path');
-const { execFile } = require('child_process');
+const { exec, execFile } = require('child_process');
 const fs = require('fs/promises');
 const os = require('os');
 const sharp = require('sharp');
@@ -10,20 +10,47 @@ let screenshotBuffer = null;
 function takeScreenshot() {
     return new Promise((resolve, reject) => {
         const tempPath = path.join(os.tmpdir(), `freeze-screen-${Date.now()}.png`);
-        
-        execFile('scrot', [tempPath, '-o', '-z'], async (error) => {
-            if (error) {
-                console.error("Scrot failed to execute. Is it installed? (sudo apt install scrot)");
-                return reject(error);
-            }
-            try {
-                const fileBuffer = await fs.readFile(tempPath);
-                await fs.unlink(tempPath);
-                resolve(fileBuffer);
-            } catch (fsError) {
-                reject(fsError);
-            }
-        });
+        const isWayland = !!process.env.WAYLAND_DISPLAY;
+        if (isWayland) {
+            exec('pactl set-sink-mute @DEFAULT_SINK@ 1', (muteError) => {
+                if (muteError) {
+                    
+                    console.warn('Could not mute system sound for screenshot:', muteError.message);
+                }
+                execFile('gnome-screenshot', ['-f', tempPath], async (error) => {
+                    exec('pactl set-sink-mute @DEFAULT_SINK@ 0', (unmuteError) => {
+                        if (unmuteError) {
+                            console.error('Failed to unmute system sound:', unmuteError.message);
+                        }
+                    });
+                    if (!error) {
+                        try {
+                            const fileBuffer = await fs.readFile(tempPath);
+                            await fs.unlink(tempPath);
+                            return resolve(fileBuffer);
+                        } catch (fsError) {
+                            return reject(fsError);
+                        }
+                    }
+                    console.error('gnome-screenshot failed to execute. Please install the "gnome-screenshot" package (e.g., sudo apt install gnome-screenshot).');
+                    return reject(error);
+                });
+            });
+        }else {
+            execFile('scrot', [tempPath, '-o', '-z'], async (error) => {
+                if (error) {
+                    console.error('scrot failed to execute. Please install the "scrot" package (e.g., sudo apt install scrot).');
+                    return reject(error);
+                }
+                try {
+                    const fileBuffer = await fs.readFile(tempPath);
+                    await fs.unlink(tempPath);
+                    resolve(fileBuffer);
+                } catch (fsError) {
+                    reject(fsError);
+                }
+            });
+        }
     });
 }
 
@@ -43,12 +70,12 @@ async function createFreezeWindows() {
                 frame: false, fullscreen: true, alwaysOnTop: true,
                 skipTaskbar: true, show: false,
                 webPreferences: {
-                    // CHANGED: Go up one directory to find preload.js
+                    
                     preload: path.join(__dirname, './preload.js'),
                     contextIsolation: true,
                 }
             });
-            // CHANGED: Load index.html from the current directory (src/)
+            
             win.loadFile(path.join(__dirname, 'index.html'));
             win.webContents.on('did-finish-load', () => {
                 win.webContents.send('screenshot-captured', screenshotDataURL);
@@ -74,7 +101,7 @@ ipcMain.on('crop-and-save', async (event, cropData) => {
         return app.quit();
     }
     try {
-        // CHANGED: Go up one directory for a cleaner output folder
+        
         const outputDir = path.join(__dirname, '../output');
         await fs.mkdir(outputDir, { recursive: true });
         const outputPath = path.join(outputDir, `crop-${Date.now()}.png`);
