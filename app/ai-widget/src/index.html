@@ -6,10 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#1e1e1e" />
   <link rel="stylesheet" href="./style.css" />
-  <title>Emoji Picker</title>
+  <title>AI Widget</title>
 </head>
 <body>
-  <div class="emoji-picker" role="application" aria-label="Emoji picker">
+  <div class="widget-container" role="application" aria-label="AI-Widget">
     <!-- macOS Traffic Light Buttons -->
     <div class="traffic-lights">
       <button class="traffic-light-btn close-btn" title="Close" aria-label="Close picker"></button>
@@ -17,71 +17,38 @@
       <button class="traffic-light-btn maximize-btn" title="Maximize" aria-label="Maximize picker"></button>
     </div>
 
-    <div class="search-container" role="region" aria-label="Search">
-      <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/>
-        <path d="M11 11L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>
-
-      <input
-        type="text"
-        class="search-input"
-        placeholder="Search emojis..."
-        aria-label="Search emojis"
-        autocomplete="off"
-      />
-    </div>
-
-    <div class="suggestions-container" id="suggestions-container" role="listbox" aria-label="Suggestions"></div>
-
-    <div class="emoji-content" id="emoji-content" role="list" aria-label="Emoji results">
-    </div>
-
-    <div class="skin-tone-popover" id="skin-tone-popover" role="dialog" aria-modal="false" aria-hidden="true">
-      <div class="skin-tone-options" id="skin-tone-options" role="list"></div>
+    <div class="content-container" id="content-container" role="list" aria-label="Content">
     </div>
 
     <div class="category-nav" role="navigation" aria-label="Categories">
-        <button class="cat-btn" data-category="recent" title="Recently Used" aria-label="Recently used">
-            <img src="../../assets/nav/r.svg" alt="" class="icon-normal">
-            <img src="../../assets/nav-active/R.svg" alt="" class="icon-active">
+        <button class="cat-btn" data-category="ai" title="AI Overview" aria-label="AI Overview">
+            <img src="../../assets/nav/ai.svg" alt="" class="icon-normal">
+            <img src="../../assets/nav-active/ai.svg" alt="" class="icon-active">
         </button>
-        <button class="cat-btn active" data-category="smileys and people" title="Smileys & People" aria-label="Smileys and people">
-            <img src="../../assets/nav/sp.svg" alt="" class="icon-normal">
-            <img src="../../assets/nav-active/SP.svg" alt="" class="icon-active">
+        <button class="cat-btn" data-category="lens" title="Search with Google Lens" aria-label="Search with Google Lens">
+            <img src="../../assets/nav/lens.svg" alt="" class="icon-normal">
+            <img src="../../assets/nav-active/lens.svg" alt="" class="icon-active">
         </button>
-        <button class="cat-btn" data-category="animals and nature" title="Animals & Nature" aria-label="Animals and nature">
-            <img src="../../assets/nav/an.svg" alt="" class="icon-normal">
-            <img src="../../assets/nav-active/AN.svg" alt="" class="icon-active">
+        <button class="cat-btn active" data-category="text" title="Copy Image text" aria-label="Copy Image text">
+            <img src="../../assets/nav/cpy-txt.svg" alt="" class="icon-normal">
+            <img src="../../assets/nav-active/cpy-txt.svg" alt="" class="icon-active">
         </button>
-        <button class="cat-btn" data-category="food and drink" title="Food & Drink" aria-label="Food and drink">
-            <img src="../../assets/nav/fd.svg" alt="" class="icon-normal">
-            <img src="../../assets/nav-active/FD.svg" alt="" class="icon-active">
+        <button class="cat-btn" data-category="img" title="Copy as Image" aria-label="Copy as Image">
+            <img src="../../assets/nav/cpy-img.svg" alt="" class="icon-normal">
+            <img src="../../assets/nav-active/cpy-img.svg" alt="" class="icon-active">
         </button>
-        <button class="cat-btn" data-category="activities" title="Activities" aria-label="Activities">
-            <img src="../../assets/nav/a.svg" alt="" class="icon-normal">
-            <img src="../../assets/nav-active/A.svg" alt="" class="icon-active">
+        <button class="cat-btn" data-category="translation" title="Translate Image text" aria-label="Translate Image text">
+            <img src="../../assets/nav/translation.svg" alt="" class="icon-normal">
+            <img src="../../assets/nav-active/translation.svg" alt="" class="icon-active">
         </button>
-        <button class="cat-btn" data-category="travel and places" title="Travel & Places" aria-label="Travel and places">
-            <img src="../../assets/nav/tp.svg" alt="" class="icon-normal">
-            <img src="../../assets/nav-active/TP.svg" alt="" class="icon-active">
+        <button class="cat-btn" data-category="account" title="My profile" aria-label="My profile">
+            <img src="../../assets/nav/avatar.svg" alt="" class="icon-normal">
+            <img src="../../assets/nav/avatar.svg" alt="" class="icon-active">
         </button>
-        <button class="cat-btn" data-category="objects" title="Objects" aria-label="Objects">
-            <img src="../../assets/nav/o.svg" alt="" class="icon-normal">
-            <img src="../../assets/nav-active/O.svg" alt="" class="icon-active">
-        </button>
-        <button class="cat-btn" data-category="symbols" title="Symbols" aria-label="Symbols">
-            <img src="../../assets/nav/s.svg" alt="" class="icon-normal">
-            <img src="../../assets/nav-active/S.svg" alt="" class="icon-active">
-        </button>
-        <button class="cat-btn" data-category="flags" title="Flags" aria-label="Flags">
-            <img src="../../assets/nav/f.svg" alt="" class="icon-normal">
-            <img src="../../assets/nav-active/F.svg" alt="" class="icon-active">
-        </button>
-        <button class="cat-btn" data-category="more" title="More" aria-label="More">
-            <img src="../../assets/nav/m.svg" alt="" class="icon-normal">
-            <img src="../../assets/nav-active/M.svg" alt="" class="icon-active">
-        </button>
+        <button class="cat-btn" data-category="settings" title="Settings" aria-label="Settings">
+            <img src="../../assets/nav/settings.svg" alt="" class="icon-normal">
+            <img src="../../assets/nav-active/settings.svg" alt="" class="icon-active">
+        </button>        
     </div>
   </div>
 
