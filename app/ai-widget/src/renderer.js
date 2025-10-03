@@ -36,7 +36,7 @@ async function renderCategory(category) {
 
   const mod = await loadPageModule(category);
   if (mod && typeof mod.createPage === 'function') {
-    const pageEl = mod.createPage(currentImagePath);
+    const pageEl = category === 'lens' ? mod.createPage() : mod.createPage(currentImagePath);
     container.appendChild(pageEl);
   } else {
     const fallback = document.createElement('div');
@@ -77,10 +77,12 @@ function initializeApp() {
     });
   });
 
-  const activeBtn = document.querySelector('.cat-btn.active');
-  if (activeBtn) {
-    const cat = activeBtn.dataset.category;
-    if (cat) renderCategory(cat);
+  // Select and render 'ai' tab by default
+  const aiBtn = document.querySelector('.cat-btn[data-category="ai"]');
+  if (aiBtn) {
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    aiBtn.classList.add('active');
+    renderCategory('ai');
   }
 
   const closeBtn = document.querySelector('.close-btn');

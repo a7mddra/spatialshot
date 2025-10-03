@@ -37,6 +37,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     }
   },
 
+  ensureMaximized: () => {
+    try {
+      ipcRenderer.invoke('ensure-maximized');
+      return true;
+    } catch (e) {
+      return false;
+    }
+      
+  },
+
   getImagePath: () => {
     try {
       return ipcRenderer.sendSync('get-image-path');

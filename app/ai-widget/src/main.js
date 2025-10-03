@@ -37,7 +37,8 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      enableRemoteModule: false
+      enableRemoteModule: false,
+      webviewTag: true
     }
   });
 
@@ -54,6 +55,8 @@ function createWindow() {
       
       
       if (currentImagePath) {
+        const image = nativeImage.createFromPath(currentImagePath);
+        clipboard.writeImage(image);
         win.webContents.send('image-path-updated', currentImagePath);
       }
     } catch (e) { }
@@ -133,6 +136,23 @@ ipcMain.handle('copy-original-image', async (event, imagePath) => {
   }
 });
 
+ipcMain.handle('ensure-maximized', (event) => {
+  try {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (!mainWindow.isMaximized()) {
+        mainWindow.maximize();
+        console.log('Window maximized by ensure-maximized handler');
+      } else {
+        console.log('Window already maximized');
+      }
+      return true;
+    }
+  } catch (e) {
+    console.warn('ensure-maximized failed:', e && e.message);
+  }
+  return false;
+});
+
 app.whenReady().then(() => {
   
   currentImagePath = getImagePathFromArgs();
@@ -158,6 +178,8 @@ app.on('second-instance', (event, commandLine, workingDirectory) => {
   if (newImagePath) {
     currentImagePath = newImagePath;
     if (mainWindow) {
+      const image = nativeImage.createFromPath(newImagePath);
+      clipboard.writeImage(image);
       if (mainWindow.isMinimized()) mainWindow.restore();
       mainWindow.show();
       mainWindow.focus();
