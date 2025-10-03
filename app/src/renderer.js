@@ -72,23 +72,18 @@ function stopDrawing() {
     ctx.beginPath();
     updateBoundsDisplay();
     
-    // ----> FIXED CROP LOGIC WITH BOUNDS CLAMPING <----
     const width = maxX - minX;
     const height = maxY - minY;
     
-    // Clamp coordinates to screenshot bounds
     const clampedX = Math.max(0, minX);
     const clampedY = Math.max(0, minY);
     
-    // Calculate maximum possible width and height from clamped position
     const maxWidth = canvas.width - clampedX;
     const maxHeight = canvas.height - clampedY;
     
-    // Ensure width and height don't exceed bounds
     const clampedWidth = Math.min(width, maxWidth);
     const clampedHeight = Math.min(height, maxHeight);
     
-    // Send the clamped crop data to the main process
     if (clampedWidth > 0 && clampedHeight > 0) {
         window.electronAPI.cropAndSave({
             x: clampedX,
@@ -97,9 +92,6 @@ function stopDrawing() {
             height: clampedHeight
         });
     } else {
-        // If user just clicks without dragging, quit without saving.
-        // Note: 'app' is not defined in renderer, we need to handle this differently
-        // Let's just do nothing or close the app
         require('electron').ipcRenderer.send('close-app');
     }
 }

@@ -7,7 +7,6 @@ const sharp = require('sharp');
 
 let screenshotBuffer = null;
 
-// Ensure single instance early (same behavior as your original)
 if (!app.requestSingleInstanceLock()) {
     app.quit();
 }
@@ -34,10 +33,10 @@ function commandExists(cmd) {
 async function processScreenshotFile(tempPath) {
     try {
         const buffer = await fs.readFile(tempPath);
-        await fs.unlink(tempPath).catch(() => {}); // best-effort cleanup
+        await fs.unlink(tempPath).catch(() => {}); 
         return buffer;
     } catch (err) {
-        // Rethrow for caller to handle
+        
         throw err;
     }
 }
@@ -65,7 +64,7 @@ function takeScreenshot() {
                 };
 
                 if (isWayland) {
-                    // Wayland: prefer gnome-screenshot, else grim if available.
+                    
                     const hasGnome = await commandExists('gnome-screenshot');
                     const hasGrim = await commandExists('grim');
 
@@ -78,7 +77,7 @@ function takeScreenshot() {
                             if (muteError) {
                                 console.warn('Could not mute system sound (non-fatal):', muteError.message);
                             }
-                            // proceed after attempting mute
+                            
                             const runner = hasGnome
                                 ? (cb) => execFile('gnome-screenshot', ['-f', tempPath], cb)
                                 : (cb) => execFile('grim', [tempPath], cb);
@@ -98,7 +97,7 @@ function takeScreenshot() {
                             });
                         });
                     } else {
-                        // No pactl — just run the screenshot tool
+                        
                         const runner = hasGnome
                             ? (cb) => execFile('gnome-screenshot', ['-f', tempPath], cb)
                             : (cb) => execFile('grim', [tempPath], cb);
@@ -117,7 +116,7 @@ function takeScreenshot() {
                         });
                     }
                 } else {
-                    // X11: prefer scrot, fallback to ImageMagick's import
+                    
                     const hasScrot = await commandExists('scrot');
                     const hasImport = await commandExists('import');
 
@@ -152,7 +151,7 @@ function takeScreenshot() {
                     }
                 }
             } else if (process.platform === 'darwin') {
-                // macOS: use built-in screencapture (no shutter sound with -x)
+                
                 execFile('screencapture', ['-x', tempPath], async (err) => {
                     if (err) {
                         console.error('screencapture failed to execute:', err.message);
@@ -166,8 +165,7 @@ function takeScreenshot() {
                     }
                 });
             } else if (process.platform === 'win32') {
-                // Windows: use PowerShell to capture the virtual screen into a file
-                // Make path safe for PowerShell single-quoted literal
+            
                 const escaped = tempPath.replace(/'/g, "''");
                 const psPathLiteral = `'${escaped}'`;
 
@@ -224,14 +222,13 @@ async function createFreezeWindows() {
                 fullscreen: true,
                 alwaysOnTop: true,
                 skipTaskbar: true,
-                show: false, // show when renderer says it's ready
+                show: false, 
                 webPreferences: {
                     preload: path.join(__dirname, './preload.js'),
                     contextIsolation: true,
                 }
             });
 
-            // Load UI and send screenshot when ready
             win.loadFile(path.join(__dirname, 'index.html'));
             win.webContents.on('did-finish-load', () => {
                 win.webContents.send('screenshot-captured', screenshotDataURL);
@@ -243,7 +240,6 @@ async function createFreezeWindows() {
     }
 }
 
-// IPC: renderer notifies image is ready to be shown
 ipcMain.on('image-ready', (event) => {
     const senderWindow = BrowserWindow.fromWebContents(event.sender);
     if (senderWindow) {
@@ -269,26 +265,13 @@ ipcMain.on('crop-and-save', async (event, cropData) => {
         }
         const displayBounds = senderWindow.getBounds();
         const metadata = await sharp(screenshotBuffer).metadata();
-
-        // --- START OF REVISED FIX ---
-
-        // 1. Calculate the absolute top-left corner, rounding immediately to get a solid integer pixel value.
         const finalLeft = Math.round(displayBounds.x + Math.max(0, cropData.x));
         const finalTop = Math.round(displayBounds.y + Math.max(0, cropData.y));
-        
-        // 2. Now that we have a definite integer for the starting point, calculate the
-        //    maximum possible width/height from that point.
         const maxPossibleWidth = metadata.width - finalLeft;
         const maxPossibleHeight = metadata.height - finalTop;
-        
-        // 3. The final width/height is the smaller of the requested crop dimension (also rounded)
-        //    and the maximum possible dimension from our calculated start point.
         const finalWidth = Math.min(Math.round(cropData.width), maxPossibleWidth);
         const finalHeight = Math.min(Math.round(cropData.height), maxPossibleHeight);
         
-        // --- END OF REVISED FIX ---
-
-        // Final check to ensure we have a valid area to crop (width and height must be positive integers).
         if (finalWidth < 1 || finalHeight < 1) {
             console.log("Crop area has zero or invalid dimensions after clamping. Aborting.");
             return app.quit();
@@ -311,13 +294,10 @@ ipcMain.on('crop-and-save', async (event, cropData) => {
     }
 });
 
-
-// Add this IPC handler
 ipcMain.on('close-app', () => {
     app.quit();
 });
 
-// Electron lifecycle
 app.whenReady().then(createFreezeWindows);
 app.on('will-quit', () => {});
 app.on('window-all-closed', () => app.quit());
