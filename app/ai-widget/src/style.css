@@ -248,4 +248,201 @@ body {
 @media (max-width: 420px) {
   .page-text { font-size: 15px; padding: 12px 14px; }
 }
+/* Image Viewer Styles */
+.image-viewer-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  box-sizing: border-box;
+}
 
+/* Canvas container - responsive layout */
+.canvas-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 20px;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.canvas-container canvas {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: calc(100% - 80px); /* Reserve space for button */
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  object-fit: contain;
+}
+
+.canvas-container canvas:hover {
+  transform: scale(1.02);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.canvas-container canvas:active {
+  transform: scale(0.98);
+}
+
+/* Elegant Copy Button - Modern floating style */
+.copy-image-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6.8px; /* 8px * 0.85 */
+  padding: 10.2px 20.4px; /* 12px/24px * 0.85 */
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.1));
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10.2px; /* 12px * 0.85 */
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 11.9px; /* 14px * 0.85 */
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-font-smoothing: antialiased;
+  box-shadow: 
+    0 3.4px 17px rgba(0, 0, 0, 0.2), /* 4px/20px * 0.85 */
+    0 0 0 0.85px rgba(255, 255, 255, 0.05) inset;
+  flex-shrink: 0; /* Prevent button from shrinking */
+}
+
+.copy-image-btn:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.15));
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1.7px); /* 2px * 0.85 */
+  box-shadow: 
+    0 6.8px 25.5px rgba(0, 0, 0, 0.3), /* 8px/30px * 0.85 */
+    0 0 0 0.85px rgba(255, 255, 255, 0.1) inset;
+}
+
+.copy-image-btn:active {
+  transform: translateY(0);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.08));
+  transition: all 0.1s ease;
+}
+
+.copy-image-btn .btn-icon {
+  width: 15.3px; /* 18px * 0.85 */
+  height: 15.3px;
+  filter: brightness(0) invert(1);
+  opacity: 0.9;
+  transition: all 0.3s ease;
+}
+
+.copy-image-btn:hover .btn-icon {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.copy-image-btn .btn-text {
+  letter-spacing: 0.425px; /* 0.5px * 0.85 */
+}
+
+/* Button states */
+.copy-image-btn.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.copy-image-btn.success {
+  background: linear-gradient(135deg, rgba(156, 156, 156, 0.2), rgba(175, 175, 175, 0.15));
+  border-color: rgba(160, 160, 160, 0.4);
+}
+
+.copy-image-btn.error {
+  background: linear-gradient(135deg, rgba(244, 67, 54, 0.2), rgba(244, 67, 54, 0.15));
+  border-color: rgba(244, 67, 54, 0.4);
+  cursor: not-allowed;
+}
+
+.copy-image-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Fullscreen viewer styles */
+.fullscreen-viewer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.15s ease;
+  cursor: default;
+}
+
+.fullscreen-viewer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fullscreen-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-select: none;
+  animation: zoomIn 0.2s ease;
+}
+
+.fullscreen-help {
+  position: fixed;
+  top: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.7);
+  color: rgba(255, 255, 255, 0.9);
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.fullscreen-help.visible {
+  opacity: 1;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes zoomIn {
+  from { 
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to { 
+    opacity: 1;
+    transform: scale(1);
+  }
+}

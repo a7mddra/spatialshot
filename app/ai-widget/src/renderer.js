@@ -8,6 +8,9 @@ const pageMap = {
   settings:    './pages/settings/main.js'
 };
 
+let currentImagePath = null;
+let currentCategory = null;
+
 async function loadPageModule(category) {
   const modulePath = pageMap[category];
   if (!modulePath) return null;
@@ -27,22 +30,42 @@ function clearContent(container) {
 async function renderCategory(category) {
   const container = document.getElementById('content-container');
   if (!container) return;
+  
+  currentCategory = category;
   clearContent(container);
 
   const mod = await loadPageModule(category);
   if (mod && typeof mod.createPage === 'function') {
-    const pageEl = mod.createPage();
+    const pageEl = mod.createPage(currentImagePath);
     container.appendChild(pageEl);
   } else {
     const fallback = document.createElement('div');
     fallback.className = 'page-center';
-    fallback.textContent = 'Page unavailable';
+    
+    const message = document.createElement('div');
+    message.className = 'page-text';
+    message.textContent = currentImagePath 
+      ? `Processing image for ${category}...` 
+      : 'No image provided. Please launch with an image path.';
+    
+    fallback.appendChild(message);
     container.appendChild(fallback);
   }
 }
 
-document.addEventListener('DOMContentLoaded', function () {
+function initializeApp() {
   const electronAPI = /** @type {any} */ (window).electronAPI;
+  
+  currentImagePath = electronAPI?.getImagePath?.() || null;
+  
+  electronAPI?.onImagePathUpdate?.(async (newImagePath) => {
+    console.log('Image path updated:', newImagePath);
+    currentImagePath = newImagePath;
+    
+    if (currentCategory) {
+      await renderCategory(currentCategory);
+    }
+  });
 
   document.querySelectorAll('.cat-btn').forEach(btn => {
     const category = btn.dataset.category;
@@ -66,7 +89,18 @@ document.addEventListener('DOMContentLoaded', function () {
   const minimizeBtn = document.querySelector('.minimize-btn');
   if (minimizeBtn) minimizeBtn.addEventListener('click', () => electronAPI?.minimize?.());
 
+  const maximizeBtn = document.querySelector('.maximize-btn');
+  if (maximizeBtn) maximizeBtn.addEventListener('click', () => electronAPI?.maximize?.());
+
+  window.handleEscape = () => {
+    window.close();
+  };
+
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') window.close();
+    if (e.key === 'Escape') {
+      window.handleEscape();
+    }
   });
-});
+}
+
+document.addEventListener('DOMContentLoaded', initializeApp);
