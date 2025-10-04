@@ -28,7 +28,7 @@ function createWindow() {
     height: 572,
     frame: false,
     transparent: true,
-    alwaysOnTop: true,
+    alwaysOnTop: false,
     resizable: true,
     skipTaskbar: false,
     hasShadow: true,
@@ -42,7 +42,7 @@ function createWindow() {
     }
   });
 
-  win.setAlwaysOnTop(true, 'screen-saver');
+
   win.setVisibleOnAllWorkspaces(true);
 
   win.loadFile(path.join(__dirname, 'index.html'));

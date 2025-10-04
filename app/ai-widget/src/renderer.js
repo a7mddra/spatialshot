@@ -8,6 +8,7 @@ const pageMap = {
 let currentImagePath = null;
 let currentCategory = null;
 let isRendering = false;
+const pageCache = {};
 
 async function loadPageModule(category) {
   const modulePath = pageMap[category];
@@ -34,22 +35,33 @@ async function renderCategory(category) {
   currentCategory = category;
 
   try {
-    container.replaceChildren();
+    // Hide all existing pages
+    for (const child of container.children) {
+      child.style.display = 'none';
+    }
 
-    const mod = await loadPageModule(category);
-    if (mod && typeof mod.createPage === 'function') {
-      const pageEl = mod.createPage(currentImagePath);
-      container.replaceChildren(pageEl);
+    if (pageCache[category]) {
+      // Show cached page
+      pageCache[category].style.display = 'flex';
     } else {
-      const fallback = document.createElement('div');
-      fallback.className = 'page-center';
-      const message = document.createElement('div');
-      message.className = 'page-text';
-      message.textContent = currentImagePath
-        ? `Processing image for ${category}...`
-        : 'No image provided. Please launch with an image path.';
-      fallback.appendChild(message);
-      container.replaceChildren(fallback);
+      // Create and cache page
+      const mod = await loadPageModule(category);
+      let pageEl;
+      if (mod && typeof mod.createPage === 'function') {
+        pageEl = mod.createPage(currentImagePath);
+      } else {
+        pageEl = document.createElement('div');
+        pageEl.className = 'page-center';
+        const message = document.createElement('div');
+        message.className = 'page-text';
+        message.textContent = currentImagePath
+          ? `Processing image for ${category}...`
+          : 'No image provided. Please launch with an image path.';
+        pageEl.appendChild(message);
+      }
+      pageCache[category] = pageEl;
+      container.appendChild(pageEl);
+      pageEl.style.display = 'flex';
     }
   } catch (err) {
     console.error('renderCategory error', err);
@@ -72,13 +84,53 @@ function initializeApp() {
     }
   });
 
+  let lastClickInfo = { time: 0, category: null };
+
   document.querySelectorAll('.cat-btn').forEach(btn => {
     const category = btn.dataset.category;
-    btn.addEventListener('click', async (e) => {
+    btn.addEventListener('click', async () => {
       if (!category) return;
-      document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      await renderCategory(category);
+
+      const now = Date.now();
+      const { time, category: lastCategory } = lastClickInfo;
+
+      if (lastCategory === category && now - time < 300) {
+        // Double-click
+        lastClickInfo = { time: 0, category: null }; // Reset to prevent triple-click issues
+
+        if (pageCache[category]) {
+          const webview = pageCache[category].querySelector('webview');
+          switch (category) {
+            case 'ai':
+            case 'lens':
+              if (pageCache[category]) {
+                const pageToReload = pageCache[category];
+                if (pageToReload.parentNode) {
+                  pageToReload.parentNode.removeChild(pageToReload);
+                }
+                delete pageCache[category];
+                await renderCategory(category);
+              }
+              break;
+            case 'account':
+              // TODO: Refresh Firebase
+              console.log('Refresh Firebase (TODO)');
+              break;
+            case 'settings':
+              // Do nothing
+              break;
+          }
+        }
+      } else {
+        // Single-click
+        lastClickInfo = { time: now, category };
+
+        if (!btn.classList.contains('active')) {
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            await renderCategory(category);
+        }
+      }
     });
   });
 
