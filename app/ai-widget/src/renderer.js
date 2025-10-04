@@ -1,7 +1,6 @@
 const pageMap = {
   ai:       './pages/ai/index.js',
   lens:     './pages/lens/index.js',
-  img:      './pages/img/index.js',
   account:  './pages/usr/index.js',
   settings: './pages/settings/index.js'
 };
