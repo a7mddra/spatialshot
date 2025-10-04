@@ -4,7 +4,7 @@ import { injectAIPrompt } from './prompt-injector.js';
 /**
  * Continuously paste until upload is detected AND completed, then inject prompt
  */
-export function startContinuousPasteUntilUploadComplete(webview) {
+export function startContinuousPasteUntilUploadComplete(webview, overlay) {
   let pasteInterval;
   let checkInterval;
   let maxAttempts = 50;
@@ -51,7 +51,7 @@ export function startContinuousPasteUntilUploadComplete(webview) {
         if (result.found && !uploadStarted) {
           console.log('Upload started! Stopping paste loop, waiting for completion...');
           uploadStarted = true;
-          clearInterval(pasteInterval); // Stop pasting when upload starts
+          clearInterval(pasteInterval);
         }
 
         if (result.done) {
@@ -59,6 +59,7 @@ export function startContinuousPasteUntilUploadComplete(webview) {
           clearInterval(pasteInterval);
           clearInterval(checkInterval);
           injectAIPrompt(webview);
+          overlay.hide();
         }
       })
       .catch(err => console.warn('Upload check failed:', err));
@@ -70,6 +71,7 @@ export function startContinuousPasteUntilUploadComplete(webview) {
       clearInterval(pasteInterval);
       clearInterval(checkInterval);
       setTimeout(() => injectAIPrompt(webview), 1000);
+      overlay.hide();
       return;
     }
 
@@ -84,8 +86,6 @@ export function startContinuousPasteUntilUploadComplete(webview) {
   };
 
   pasteInterval = setInterval(sendPaste, 500);
-  
   checkInterval = setInterval(checkForUploadComplete, 300);
-  
   sendPaste();
 }

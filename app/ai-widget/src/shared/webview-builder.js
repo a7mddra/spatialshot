@@ -72,7 +72,7 @@ export class WebviewBuilder {
     return this.createWebview(
       'https://www.google.com/search?udm=50&aep=11&hl=en',
       {},
-      { overlay: true }
+      { overlay: false }
     );
   }
 }

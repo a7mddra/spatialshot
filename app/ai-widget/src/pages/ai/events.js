@@ -4,15 +4,23 @@ import { startContinuousPasteUntilUploadComplete } from './uploader.js';
 /**
  * Sets up event listeners
  */
-export function setupAIEvents(webview) {
+export function setupAIEvents(webview, overlay) {
+  let pasteStarted = false;
+
+  const startPaste = () => {
+    if (pasteStarted) return;
+    pasteStarted = true;
+    startContinuousPasteUntilUploadComplete(webview, overlay);
+  };
+
   webview.addEventListener('dom-ready', () => {
     console.log('AI Overview page ready');
     sendEnsureMaximized();
-    startContinuousPasteUntilUploadComplete(webview);
+    startPaste();
   });
 
   webview.addEventListener('did-finish-load', () => {
     console.log('AI Overview fully loaded');
-    startContinuousPasteUntilUploadComplete(webview);
+    startPaste();
   });
 }
