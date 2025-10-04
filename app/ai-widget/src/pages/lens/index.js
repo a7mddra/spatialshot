@@ -1,9 +1,11 @@
 import { WebviewBuilder } from '../../shared/webview-builder.js';
 import { LENS_AUTOMATION_SCRIPT, sendPasteKeyEvents } from '../../shared/webview-uploader.js';
 import { sendEnsureMaximized } from '../../shared/ipc-bridge.js';
+import { CaptchaDetector } from '../../shared/captcha-detector.js';
 
 export function createPage() {
   let hasResults = false;
+  let captchaDetected = false;
 
   const wrapper = document.createElement('div');
   wrapper.className = 'page-wrapper';
@@ -13,6 +15,20 @@ export function createPage() {
   const { container: webviewContainer, webview } = WebviewBuilder.createLensWebview();
 
   wrapper.appendChild(webviewContainer);
+
+  const stopMonitoring = CaptchaDetector.monitorForCaptcha(webview, (hasCaptcha, captchaType) => {
+    captchaDetected = hasCaptcha;
+    if (hasCaptcha) {
+      console.log(`Captcha detected in Lens: ${captchaType}`);
+      webview.hideSplash();
+    } else {
+      console.log('Captcha solved or gone in Lens');
+    }
+  });
+
+  webview.addEventListener('close', () => {
+    stopMonitoring();
+  });
 
   webview.addEventListener('dom-ready', () => {
     console.log('Lens DOM ready (page-level)');
@@ -37,11 +53,11 @@ export function createPage() {
           hasResults = true;
           console.log('Lens results detected');
         } else {
-          if (!hasResults) {
+          if (!hasResults && !captchaDetected) {
             console.log('Lens results not detected - doing safe reload');
             webview._safeReload();
           } else {
-            console.log('Lens results not detected, but showing old results.');
+            console.log('Lens results not detected, but showing old results or captcha is present.');
           }
         }
       })

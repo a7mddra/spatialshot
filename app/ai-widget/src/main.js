@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, nativeImage, clipboard } = require('electron');
+const { app, BrowserWindow, ipcMain, nativeImage, clipboard, session } = require('electron');
 const fs = require('fs');
 const path = require('path');
 
@@ -153,11 +153,31 @@ ipcMain.handle('ensure-maximized', (event) => {
   return false;
 });
 
+ipcMain.handle('clear-webview-cache', async (event, partition) => {
+  if (!partition) return false;
+  try {
+    const webviewSession = session.fromPartition(partition);
+    if (webviewSession) {
+      await webviewSession.clearCache();
+      return true;
+    }
+  } catch (error) {
+    console.error(`Failed to clear cache for partition ${partition}:`, error);
+  }
+  return false;
+});
+
 app.whenReady().then(() => {
   
   currentImagePath = getImagePathFromArgs();
   
   mainWindow = createWindow();
+
+  const googleSession = session.fromPartition('persist:google');
+  googleSession.webRequest.onBeforeSendHeaders((details, callback) => {
+    details.requestHeaders['Accept-Language'] = 'en-US,en;q=0.9';
+    callback({ requestHeaders: details.requestHeaders });
+  });
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

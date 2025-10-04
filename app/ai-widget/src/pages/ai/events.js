@@ -1,3 +1,4 @@
+import { CaptchaDetector } from '../../shared/captcha-detector.js';
 import { sendEnsureMaximized } from '../../shared/ipc-bridge.js';
 import { startContinuousPasteUntilUploadComplete } from './uploader.js';
 
@@ -22,5 +23,20 @@ export function setupAIEvents(webview, overlay) {
   webview.addEventListener('did-finish-load', () => {
     console.log('AI Overview fully loaded');
     startPaste();
+  });
+
+  const stopMonitoring = CaptchaDetector.monitorForCaptcha(webview, (hasCaptcha, captchaType) => {
+    if (hasCaptcha) {
+      console.log(`Captcha detected: ${captchaType}`);
+      overlay.hide();
+    } else {
+      console.log('Captcha solved or gone');
+      overlay.show();
+      webview.reload();
+    }
+  });
+
+  webview.addEventListener('close', () => {
+    stopMonitoring();
   });
 }

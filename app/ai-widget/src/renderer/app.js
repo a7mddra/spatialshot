@@ -125,13 +125,9 @@ async function initializeApp() {
           switch (category) {
             case 'ai':
             case 'lens':
-              if (pageCache[category]) {
-                const pageToReload = pageCache[category];
-                if (pageToReload.parentNode) {
-                  pageToReload.parentNode.removeChild(pageToReload);
-                }
-                delete pageCache[category];
-                await renderCategory(category);
+              if (webview) {
+                await webview._clearCache();
+                webview._safeReload();
               }
               break;
             case 'account':

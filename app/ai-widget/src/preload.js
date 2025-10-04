@@ -64,6 +64,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     }
   },
 
+  clearWebviewCache: (partition) => {
+    try {
+      return ipcRenderer.invoke('clear-webview-cache', partition);
+    } catch (e) {
+      console.error('Failed to clear webview cache:', e);
+      return false;
+    }
+  },
+
   removeAllListeners: (channel) => {
     try {
       ipcRenderer.removeAllListeners(channel);

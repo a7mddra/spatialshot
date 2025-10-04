@@ -24,6 +24,7 @@ export class WebviewBuilder {
    */
   static createWebview(src, preferences = {}, opts = {}) {
     const {
+      partition = null,
       overlay = true,
       overlayHTML = WebviewBuilder.defaultOverlayHTML,
       maxInitialTimeout = 8000,
@@ -45,6 +46,9 @@ export class WebviewBuilder {
 
     const webview = document.createElement('webview');
     webview.src = src;
+    if (partition) {
+      webview.setAttribute('partition', partition);
+    }
     webview.className = 'web-container';
     webview.setAttribute('allowpopups', '');
     webview.setAttribute('webpreferences', 'contextIsolation=no');
@@ -62,9 +66,9 @@ export class WebviewBuilder {
 
   static createLensWebview() {
     return this.createWebview(
-      'https://lens.google.com/search?ep=subb&re=df&s=4&hl=en',
+      'https://lens.google.com/search?ep=subb&re=df&s=4&hl=en&gl=US',
       {},
-      { overlay: true }
+      { overlay: true, partition: 'persist:google' }
     );
   }
 
@@ -72,7 +76,7 @@ export class WebviewBuilder {
     return this.createWebview(
       'https://www.google.com/search?udm=50&aep=11&hl=en',
       {},
-      { overlay: false }
+      { overlay: false, partition: 'persist:google' }
     );
   }
 }
@@ -88,6 +92,14 @@ export function attachSharedBehavior(webview, overlayEl = null, opts = {}) {
 
   webview.initialRenderDone = false;
   webview._isReloading = false;
+
+  webview._clearCache = async function () {
+    const partition = webview.getAttribute('partition');
+    if (partition) {
+      return await window.electronAPI.clearWebviewCache(partition);
+    }
+    return false;
+  };
 
   webview.showSplash = function () {
     if (!overlayEl) return;
