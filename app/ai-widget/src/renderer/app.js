@@ -1,8 +1,8 @@
 const pageMap = {
-  ai:       './pages/ai/index.js',
-  lens:     './pages/lens/index.js',
-  account:  './pages/usr/index.js',
-  settings: './pages/settings/index.js'
+  ai:       '../pages/ai/index.js',
+  lens:     '../pages/lens/index.js',
+  account:  '../pages/usr/index.js',
+  settings: '../pages/settings/index.js'
 };
 
 let currentImagePath = null;
