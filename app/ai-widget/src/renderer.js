@@ -1,15 +1,14 @@
 const pageMap = {
-  ai:          './pages/ai/main.js',
-  lens:        './pages/lens/main.js',
-  text:        './pages/ocr/image-text.js',
-  img:         './pages/ocr/image-viewer.js',
-  translation: './pages/ocr/translation.js',
-  account:     './pages/usr/main.js',
-  settings:    './pages/settings/main.js'
+  ai:       './pages/ai/index.js',
+  lens:     './pages/lens/index.js',
+  img:      './pages/img/index.js',
+  account:  './pages/usr/index.js',
+  settings: './pages/settings/index.js'
 };
 
 let currentImagePath = null;
 let currentCategory = null;
+let isRendering = false;
 
 async function loadPageModule(category) {
   const modulePath = pageMap[category];
@@ -23,45 +22,52 @@ async function loadPageModule(category) {
   }
 }
 
-function clearContent(container) {
-  container.innerHTML = '';
-}
-
 async function renderCategory(category) {
   const container = document.getElementById('content-container');
   if (!container) return;
-  
-  currentCategory = category;
-  clearContent(container);
 
-  const mod = await loadPageModule(category);
-  if (mod && typeof mod.createPage === 'function') {
-    const pageEl = category === 'lens' ? mod.createPage() : mod.createPage(currentImagePath);
-    container.appendChild(pageEl);
-  } else {
-    const fallback = document.createElement('div');
-    fallback.className = 'page-center';
-    
-    const message = document.createElement('div');
-    message.className = 'page-text';
-    message.textContent = currentImagePath 
-      ? `Processing image for ${category}...` 
-      : 'No image provided. Please launch with an image path.';
-    
-    fallback.appendChild(message);
-    container.appendChild(fallback);
+  if (isRendering && currentCategory === category) {
+    console.log('renderCategory: already rendering', category);
+    return;
+  }
+
+  isRendering = true;
+  currentCategory = category;
+
+  try {
+    container.replaceChildren();
+
+    const mod = await loadPageModule(category);
+    if (mod && typeof mod.createPage === 'function') {
+      const pageEl = mod.createPage(currentImagePath);
+      container.replaceChildren(pageEl);
+    } else {
+      const fallback = document.createElement('div');
+      fallback.className = 'page-center';
+      const message = document.createElement('div');
+      message.className = 'page-text';
+      message.textContent = currentImagePath
+        ? `Processing image for ${category}...`
+        : 'No image provided. Please launch with an image path.';
+      fallback.appendChild(message);
+      container.replaceChildren(fallback);
+    }
+  } catch (err) {
+    console.error('renderCategory error', err);
+  } finally {
+    isRendering = false;
   }
 }
 
 function initializeApp() {
   const electronAPI = /** @type {any} */ (window).electronAPI;
-  
+
   currentImagePath = electronAPI?.getImagePath?.() || null;
-  
+
   electronAPI?.onImagePathUpdate?.(async (newImagePath) => {
     console.log('Image path updated:', newImagePath);
     currentImagePath = newImagePath;
-    
+
     if (currentCategory) {
       await renderCategory(currentCategory);
     }
@@ -77,12 +83,9 @@ function initializeApp() {
     });
   });
 
-  // Select and render 'ai' tab by default
   const aiBtn = document.querySelector('.cat-btn[data-category="ai"]');
   if (aiBtn) {
-    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-    aiBtn.classList.add('active');
-    renderCategory('ai');
+    aiBtn.click();
   }
 
   const closeBtn = document.querySelector('.close-btn');

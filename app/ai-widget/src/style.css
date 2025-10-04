@@ -447,15 +447,16 @@ body {
   }
 }
 
-/* Lens Container */
-.lens-container {
+/* Web Container */
+.web-container {
   width: 100%;
   height: 100%;
   display: flex;
+  position: relative;
   flex-direction: column;
 }
 
-.lens-status {
+.web-status {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -486,55 +487,58 @@ body {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
-
-/* Simple Lens Container */
-.lens-simple-container {
+/* Loading Overlay */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0);
+  z-index: 1000;
   display: flex;
-  flex-direction: column;
   align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  transition: opacity 0.3s ease;
+}
+
+.loading-overlay:not(.active) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loading-content {
   text-align: center;
+  max-width: 280px;
   padding: 30px;
-  gap: 16px;
 }
 
-.lens-icon {
-  font-size: 48px;
-  margin-bottom: 8px;
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #4285f4; /* Google blue */
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
 }
 
-.lens-title {
-  color: rgba(255, 255, 255, 0.95);
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-content h3 {
+  margin: 0 0 10px 0;
+  color: #1d1d1f;
+  font-weight: 600;
   font-size: 18px;
-  font-weight: 600;
 }
 
-.lens-description {
-  color: rgba(255, 255, 255, 0.7);
+.loading-hint {
+  color: #86868b;
   font-size: 14px;
+  margin: 0;
   line-height: 1.4;
-  max-width: 300px;
-}
-
-.lens-open-btn {
-  padding: 12px 24px;
-  background: linear-gradient(135deg, #4285f4, #34a853);
-  border: none;
-  border-radius: 8px;
-  color: white;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  margin-top: 8px;
-}
-
-.lens-open-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(66, 133, 244, 0.3);
-}
-
-.lens-note {
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 12px;
-  margin-top: 8px;
 }
