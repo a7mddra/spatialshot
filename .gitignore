@@ -4,3 +4,4 @@ app/output
 app/dist
 app/ai-widget/node_modules
 app/ai-widget/package-lock.json
+doc/TODO
