@@ -45,7 +45,7 @@ function createWindow() {
 
   win.setVisibleOnAllWorkspaces(true);
 
-  win.loadFile(path.join(__dirname, 'index.html'));
+  win.loadFile(path.join(__dirname, 'renderer/index.html'));
 
   win.once('ready-to-show', () => {
     try {

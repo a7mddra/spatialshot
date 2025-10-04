@@ -35,16 +35,13 @@ async function renderCategory(category) {
   currentCategory = category;
 
   try {
-    // Hide all existing pages
     for (const child of container.children) {
       child.style.display = 'none';
     }
 
     if (pageCache[category]) {
-      // Show cached page
       pageCache[category].style.display = 'flex';
     } else {
-      // Create and cache page
       const mod = await loadPageModule(category);
       let pageEl;
       if (mod && typeof mod.createPage === 'function') {
@@ -70,7 +67,34 @@ async function renderCategory(category) {
   }
 }
 
-function initializeApp() {
+async function preLoadCategory(category) {
+  const container = document.getElementById('content-container');
+  if (!container || pageCache[category]) return;
+
+  try {
+    const mod = await loadPageModule(category);
+    let pageEl;
+    if (mod && typeof mod.createPage === 'function') {
+      pageEl = mod.createPage(currentImagePath);
+    } else {
+      pageEl = document.createElement('div');
+      pageEl.className = 'page-center';
+      const message = document.createElement('div');
+      message.className = 'page-text';
+      message.textContent = currentImagePath
+        ? `Processing image for ${category}...`
+        : 'No image provided. Please launch with an image path.';
+      pageEl.appendChild(message);
+    }
+    pageCache[category] = pageEl;
+    container.appendChild(pageEl);
+    pageEl.style.display = 'none';
+  } catch (err) {
+    console.error('preLoadCategory error', err);
+  }
+}
+
+async function initializeApp() {
   const electronAPI = /** @type {any} */ (window).electronAPI;
 
   currentImagePath = electronAPI?.getImagePath?.() || null;
@@ -95,8 +119,6 @@ function initializeApp() {
       const { time, category: lastCategory } = lastClickInfo;
 
       if (lastCategory === category && now - time < 300) {
-        // Double-click
-        lastClickInfo = { time: 0, category: null }; // Reset to prevent triple-click issues
 
         if (pageCache[category]) {
           const webview = pageCache[category].querySelector('webview');
@@ -113,16 +135,13 @@ function initializeApp() {
               }
               break;
             case 'account':
-              // TODO: Refresh Firebase
               console.log('Refresh Firebase (TODO)');
               break;
             case 'settings':
-              // Do nothing
               break;
           }
         }
       } else {
-        // Single-click
         lastClickInfo = { time: now, category };
 
         if (!btn.classList.contains('active')) {
@@ -136,7 +155,9 @@ function initializeApp() {
 
   const aiBtn = document.querySelector('.cat-btn[data-category="ai"]');
   if (aiBtn) {
-    aiBtn.click();
+    aiBtn.classList.add('active');
+    await renderCategory('ai');
+    preLoadCategory('lens');
   }
 
   const closeBtn = document.querySelector('.close-btn');
