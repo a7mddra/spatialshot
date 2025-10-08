@@ -1,3 +1,5 @@
+import * as welcome from '../pages/welcome/index.js';
+
 const pageMap = {
   ai:       '../pages/ai/index.js',
   lens:     '../pages/lens/index.js',
@@ -115,46 +117,57 @@ async function initializeApp() {
     btn.addEventListener('click', async () => {
       if (!category) return;
 
-      const now = Date.now();
-      const { time, category: lastCategory } = lastClickInfo;
+      if (welcome.onTabClick(category)) {
+        const now = Date.now();
+        const { time, category: lastCategory } = lastClickInfo;
 
-      if (lastCategory === category && now - time < 300) {
+        if (lastCategory === category && now - time < 300) {
 
-        if (pageCache[category]) {
-          const webview = pageCache[category].querySelector('webview');
-          switch (category) {
-            case 'ai':
-            case 'lens':
-              if (webview) {
-                await webview._clearCache();
-                webview._safeReload();
-              }
-              break;
-            case 'account':
-              console.log('Refresh Firebase (TODO)');
-              break;
-            case 'settings':
-              break;
+          if (pageCache[category]) {
+            const webview = pageCache[category].querySelector('webview');
+            switch (category) {
+              case 'ai':
+              case 'lens':
+                if (webview) {
+                  await webview._clearCache();
+                  webview._safeReload();
+                }
+                break;
+              case 'account':
+                console.log('Refresh Firebase (TODO)');
+                break;
+              case 'settings':
+                break;
+            }
           }
-        }
-      } else {
-        lastClickInfo = { time: now, category };
+        } else {
+          lastClickInfo = { time: now, category };
 
-        if (!btn.classList.contains('active')) {
-            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            await renderCategory(category);
+          if (!btn.classList.contains('active')) {
+              document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+              btn.classList.add('active');
+              await renderCategory(category);
+          }
         }
       }
     });
   });
 
-  const aiBtn = document.querySelector('.cat-btn[data-category="ai"]');
-  if (aiBtn) {
-    aiBtn.classList.add('active');
-    await renderCategory('ai');
-    preLoadCategory('lens');
+  const loginBtn = document.getElementById('login-btn'); // Changed from 'activate-btn'
+  if (loginBtn) {
+    loginBtn.addEventListener('click', () => {
+      welcome.onActivate(() => {
+        const aiBtn = document.querySelector('.cat-btn[data-category="ai"]');
+        if (aiBtn) {
+          aiBtn.classList.add('active');
+          renderCategory('ai');
+          preLoadCategory('lens');
+        }
+      });
+    });
   }
+
+  welcome.onAppStart();
 
   const closeBtn = document.querySelector('.close-btn');
   if (closeBtn) closeBtn.addEventListener('click', () => window.close());
