@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, nativeImage, clipboard, session, shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
+const userDataManager = require('./shared/user-data');
 
 const isDev = process.env.NODE_ENV === 'development';
 let mainWindow = null;
@@ -137,6 +138,77 @@ ipcMain.handle('clear-webview-cache', async (event, partition) => {
   return false;
 });
 
+ipcMain.handle('get-user-data', async () => {
+  return userDataManager.getUserData();
+});
+
+ipcMain.on('logout', () => {
+  userDataManager.clearUserData();
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('logged-out');
+  }
+});
+
+ipcMain.on('save-user-data', (event, userData) => {
+  userDataManager.saveUserData(userData);
+});
+
+ipcMain.handle('verify-user-status', async (event, userEmail) => {
+  const client = new MongoClient(mongoUri, {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    }
+  });
+
+  try {
+    await client.connect();
+    const db = client.db("spatial-shot-db");
+    const usersCollection = db.collection("users");
+    const user = await usersCollection.findOne({ email: userEmail });
+
+    if (user) {
+      return { status: 'VALID', user: { id: user.googleId, name: user.name, email: user.email, photoURL: user.photoURL } };
+    } else {
+      return { status: 'NOT_FOUND' };
+    }
+  } catch (error) {
+    console.error('Error verifying user status:', error);
+    throw error;
+  } finally {
+    await client.close();
+  }
+});
+
+ipcMain.handle('delete-account', async (event, userEmail) => {
+  const client = new MongoClient(mongoUri, {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    }
+  });
+
+  try {
+    await client.connect();
+    const db = client.db("spatial-shot-db");
+    const usersCollection = db.collection("users");
+    const result = await usersCollection.deleteOne({ email: userEmail });
+    
+    if (result.deletedCount === 1) {
+      userDataManager.clearUserData();
+      return { success: true };
+    }
+    return { success: false, error: 'User not found' };
+  } catch (error) {
+    console.error('Error deleting account:', error);
+    throw error;
+  } finally {
+    await client.close();
+  }
+});
+
 app.whenReady().then(() => {
   currentImagePath = getImagePathFromArgs();
   mainWindow = createWindow();
@@ -215,8 +287,20 @@ async function insertUserDoc(doc) {
     await client.connect();
     const db = client.db("spatial-shot-db");
     const usersCollection = db.collection("users");
-    const result = await usersCollection.insertOne(doc);
-    return result;
+
+    const existingUser = await usersCollection.findOne({ googleId: doc.googleId });
+
+    if (existingUser) {
+      // User exists, update them
+      const result = await usersCollection.updateOne(
+        { googleId: doc.googleId },
+        { $set: { name: doc.name, email: doc.email, photoURL: doc.photoURL, lastLogin: new Date() } }
+      );
+      return { ...result, insertedId: existingUser._id }; // Return a compatible result object
+    } else {
+      // User does not exist, insert them
+      return await usersCollection.insertOne(doc);
+    }
   } finally {
     await client.close();
   }
@@ -225,6 +309,7 @@ async function insertUserDoc(doc) {
 function makeUserDocFromOAuth(user) {
   return {
     _id: `google_${user.sub || 'unknown'}_${Date.now()}`,
+    googleId: user.sub,
     name: user.name || `${user.given_name || ''} ${user.family_name || ''}`.trim(),
     email: user.email || '',
     photoURL: user.picture || '',
@@ -311,10 +396,17 @@ ipcMain.on('start-auth', () => {
                 
                 try {
                   const doc = makeUserDocFromOAuth(user);
+                  const userData = {
+                    id: user.sub,
+                    name: doc.name,
+                    email: doc.email,
+                    photoURL: doc.photoURL
+                  };
+                  userDataManager.saveUserData(userData);
                   const result = await insertUserDoc(doc);
-                  safeSendAuthResult({ success: true, insertedId: result.insertedId });
+                  safeSendAuthResult({ success: true, insertedId: result.insertedId, user: userData });
                 } catch (err) {
-                  console.error('MongoDB insert error:', err);
+                  console.error('MongoDB insert or user data save error:', err);
                   safeSendAuthResult({ success: false, error: err.message });
                 }
 

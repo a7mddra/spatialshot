@@ -69,6 +69,22 @@ async function renderCategory(category) {
   }
 }
 
+function updateUserAvatar(photoURL) {
+  const accountBtn = document.querySelector('.cat-btn[data-category="account"]');
+  if (accountBtn) {
+    const normalImg = accountBtn.querySelector('img.icon-normal');
+    const activeImg = accountBtn.querySelector('img.icon-active');
+    if (normalImg) {
+      normalImg.src = photoURL;
+      normalImg.style.borderRadius = '50%';
+    }
+    if (activeImg) {
+      activeImg.src = photoURL;
+      activeImg.style.borderRadius = '50%';
+    }
+  }
+}
+
 async function preLoadCategory(category) {
   const container = document.getElementById('content-container');
   if (!container || pageCache[category]) return;
@@ -165,11 +181,49 @@ async function initializeApp() {
   const loginBtn = document.getElementById('login-btn');
   if (loginBtn) {
     loginBtn.addEventListener('click', () => {
-      welcome.onActivate(activateAiTab);
+      electronAPI?.startAuth?.();
     });
   }
 
-  welcome.onAppStart(activateAiTab);
+  electronAPI.onAuthResult(async (result) => {
+    if (result.success && result.user) {
+      updateUserAvatar(result.user.photoURL);
+      welcome.onActivate(activateAiTab);
+    } else {
+      console.error('Authentication failed:', result.error);
+    }
+  });
+
+  const userData = await electronAPI.getUserData();
+  if (userData) {
+    updateUserAvatar(userData.photoURL);
+    welcome.onActivate(activateAiTab, true); // Bypass welcome screen
+
+    // Fire-and-forget verification. Don't await it.
+    electronAPI.verifyUserStatus(userData.email)
+      .then(verificationResult => {
+        if (!verificationResult) return;
+
+        if (verificationResult.status === 'VALID') {
+          // Silently update local profile with fresh data from DB
+          electronAPI.saveUserData(verificationResult.user);
+          if (verificationResult.user.photoURL !== userData.photoURL) {
+            updateUserAvatar(verificationResult.user.photoURL);
+          }
+        } else if (verificationResult.status === 'NOT_FOUND') {
+          // User deleted from DB, log them out
+          electronAPI.logout();
+          window.location.reload();
+        }
+      })
+      .catch(error => {
+        // This is the 'no internet' case. Do nothing.
+        console.warn('Could not verify user status (likely offline): ', error.message);
+      });
+
+  } else {
+    welcome.onAppStart();
+  }
 
   const closeBtn = document.querySelector('.close-btn');
   if (closeBtn) closeBtn.addEventListener('click', () => window.close());

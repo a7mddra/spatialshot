@@ -1,7 +1,7 @@
 
 let isActivated = false;
 
-function onAppStart(activateAiTab) {
+function onAppStart() {
   const welcomeScreen = document.getElementById('welcome-screen');
   if (welcomeScreen) {
     welcomeScreen.style.display = 'flex';
@@ -14,22 +14,25 @@ function onAppStart(activateAiTab) {
       }
     }
   }
-
-  window.electronAPI.onAuthResult((result) => {
-    if (result && result.success) {
-      isActivated = true;
-      if (welcomeScreen) {
-        welcomeScreen.style.display = 'none';
-      }
-      activateAiTab();
-    } else {
-      console.error('Authentication failed', result && result.error);
-    }
-  });
 }
 
-function onActivate(activateAiTab) {
-  window.electronAPI.startAuth();
+function onActivate(activateAiTab, skipAuth = false) {
+  if (skipAuth) {
+    isActivated = true;
+    const welcomeScreen = document.getElementById('welcome-screen');
+    if (welcomeScreen) {
+      welcomeScreen.style.display = 'none';
+    }
+    activateAiTab();
+    return;
+  }
+
+  isActivated = true;
+  const welcomeScreen = document.getElementById('welcome-screen');
+  if (welcomeScreen) {
+    welcomeScreen.style.display = 'none';
+  }
+  activateAiTab();
 }
 
 function onTabClick(tabId) {

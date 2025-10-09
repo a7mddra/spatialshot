@@ -98,5 +98,48 @@ contextBridge.exposeInMainWorld('electronAPI', {
       console.error('Failed to set auth result listener:', e);
       return false;
     }
+  },
+
+  getUserData: () => {
+    try {
+      return ipcRenderer.invoke('get-user-data');
+    } catch (e) {
+      console.error('Failed to get user data:', e);
+      return null;
+    }
+  },
+
+  verifyUserStatus: (email) => {
+    try {
+      return ipcRenderer.invoke('verify-user-status', email);
+    } catch (e) {
+      console.error('Failed to verify user status:', e);
+      throw e;
+    }
+  },
+
+  saveUserData: (data) => {
+    try {
+      ipcRenderer.send('save-user-data', data);
+    } catch (e) {
+      console.error('Failed to save user data:', e);
+    }
+  },
+
+  logout: () => {
+    try {
+      ipcRenderer.send('logout');
+    } catch (e) {
+      console.error('Failed to logout:', e);
+    }
+  },
+
+  deleteAccount: (email) => {
+    try {
+      return ipcRenderer.invoke('delete-account', email);
+    } catch (e) {
+      console.error('Failed to delete account:', e);
+      throw e;
+    }
   }
 });
