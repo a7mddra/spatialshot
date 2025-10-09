@@ -318,7 +318,7 @@ ipcMain.on('start-auth', () => {
                   safeSendAuthResult({ success: false, error: err.message });
                 }
 
-                res.end('Success! User data saved to DB. You can close this window.');
+                res.end('All set! You can go back to your app now.');
               });
             });
 
