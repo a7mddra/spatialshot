@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "AI widget for handling the screenshots taken from the main app.",
   "main": "src/main.js",
+  "type": "commonjs",
   "author": "a7md <a7mddra@gmail.com>",
   "license": "MIT",
   "scripts": {

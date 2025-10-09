@@ -134,7 +134,7 @@ async function initializeApp() {
                 }
                 break;
               case 'account':
-                console.log('Refresh Firebase (TODO)');
+                console.log('Refresh MongoDB (TODO)');
                 break;
               case 'settings':
                 break;
@@ -153,21 +153,23 @@ async function initializeApp() {
     });
   });
 
-  const loginBtn = document.getElementById('login-btn'); // Changed from 'activate-btn'
+  const activateAiTab = () => {
+    const aiBtn = document.querySelector('.cat-btn[data-category="ai"]');
+    if (aiBtn) {
+      aiBtn.classList.add('active');
+      renderCategory('ai');
+      preLoadCategory('lens');
+    }
+  };
+
+  const loginBtn = document.getElementById('login-btn');
   if (loginBtn) {
     loginBtn.addEventListener('click', () => {
-      welcome.onActivate(() => {
-        const aiBtn = document.querySelector('.cat-btn[data-category="ai"]');
-        if (aiBtn) {
-          aiBtn.classList.add('active');
-          renderCategory('ai');
-          preLoadCategory('lens');
-        }
-      });
+      welcome.onActivate(activateAiTab);
     });
   }
 
-  welcome.onAppStart();
+  welcome.onAppStart(activateAiTab);
 
   const closeBtn = document.querySelector('.close-btn');
   if (closeBtn) closeBtn.addEventListener('click', () => window.close());

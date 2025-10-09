@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, nativeImage, clipboard, session } = require('electron');
+const { app, BrowserWindow, ipcMain, nativeImage, clipboard, session, shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
 
@@ -212,6 +212,206 @@ if (process.platform !== 'darwin') {
   if (!app.requestSingleInstanceLock()) {
     app.quit();
     return;
+  }
+}
+
+const http  = require('http');
+const urlm  = require('url');
+const https = require('https');
+const { MongoClient, ServerApiVersion } = require('mongodb');
+
+const config = require('./config.private.json');
+const oauth2 = config.google_oauth  || {};
+const db     = config.mongodb_atlas || {};
+const o2     = {
+  id:        oauth2.client_id        || 'YOUR_GOOGLE_CLIENT_ID',
+  secret:    oauth2.client_secret    || 'YOUR_GOOGLE_CLIENT_SECRET',
+  redirect:  oauth2.redirect_uris[0] || 'http://localhost:3000',
+  auth:      oauth2.auth_uri         || 'https://accounts.google.com/o/oauth2/v2/auth',
+  token:     oauth2.token_endpoint   || 'https://oauth2.googleapis.com/token',
+  scope:     'profile email'
+};
+
+const mongoUri = `mongodb+srv://${db.username}:${db.password}@${db.host}/?${db.options}`;
+
+let authServer;
+
+async function insertUserDoc(doc) {
+  const client = new MongoClient(mongoUri, {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    }
+  });
+
+  try {
+    await client.connect();
+    const db = client.db("spatial-shot-db");
+    const usersCollection = db.collection("users");
+    const result = await usersCollection.insertOne(doc);
+    return result;
+  } finally {
+    await client.close();
+  }
+}
+
+function makeUserDocFromOAuth(user) {
+  return {
+    _id: `google_${user.sub || 'unknown'}_${Date.now()}`,
+    name: user.name || `${user.given_name || ''} ${user.family_name || ''}`.trim(),
+    email: user.email || '',
+    photoURL: user.picture || '',
+    lastLogin: new Date(),
+    createdAt: new Date()
+  };
+}
+
+ipcMain.handle('add-user', async (event, maybeUser) => {
+  try {
+    let doc;
+    if (maybeUser && typeof maybeUser === 'object') {
+      doc = makeUserDocFromOAuth(maybeUser);
+    } else {
+      doc = {
+        _id: `test_user_${Date.now()}`,
+        name: "Test User",
+        email: "test@example.com",
+        photoURL: "",
+        lastLogin: new Date(),
+        createdAt: new Date()
+      };
+    }
+
+    const result = await insertUserDoc(doc);
+    return { success: true, insertedId: result.insertedId };
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.on('start-auth', () => {
+  const authUrl = `${o2.auth}?client_id=${o2.id}&redirect_uri=${encodeURIComponent(o2.redirect)}&scope=${encodeURIComponent(o2.scope)}&response_type=code`;
+
+  shell.openExternal(authUrl);
+
+  if (!authServer) {
+    authServer = http.createServer((req, res) => {
+      const parsedUrl = urlm.parse(req.url, true);
+      const code = parsedUrl.query.code;
+
+      if (code) {
+        const postData = `code=${code}&client_id=${o2.id}&client_secret=${o2.secret}&redirect_uri=${o2.redirect}&grant_type=authorization_code`;
+
+        const tokenOptions = {
+          hostname: 'oauth2.googleapis.com',
+          path: '/token',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Length': Buffer.byteLength(postData)
+          }
+        };
+
+        const tokenReq = https.request(tokenOptions, (tokenRes) => {
+          let data = '';
+          tokenRes.on('data', (chunk) => { data += chunk; });
+          tokenRes.on('end', async () => {
+            let tokens;
+            try {
+              tokens = JSON.parse(data);
+            } catch (err) {
+              console.error('Token parse error', err);
+              safeSendAuthResult({ success: false, error: 'Failed to parse token response' });
+              res.end('Authentication failed (bad token).');
+              return;
+            }
+
+            if (tokens.error) {
+              console.error('Token error:', tokens.error);
+              safeSendAuthResult({ success: false, error: tokens.error.toString() });
+              res.end('Authentication failed.');
+              return;
+            }
+
+            const access_token = tokens.access_token;
+
+            const userOptions = {
+              hostname: 'www.googleapis.com',
+              path: '/oauth2/v3/userinfo',
+              method: 'GET',
+              headers: { 'Authorization': `Bearer ${access_token}` }
+            };
+
+            const userReq = https.request(userOptions, (userRes) => {
+              let userData = '';
+              userRes.on('data', (chunk) => { userData += chunk; });
+              userRes.on('end', async () => {
+                let user;
+                try {
+                  user = JSON.parse(userData);
+                } catch (err) {
+                  console.error('User parse error', err);
+                  safeSendAuthResult({ success: false, error: 'Failed to parse user info' });
+                  res.end('Failed to fetch user info.');
+                  return;
+                }
+
+                
+                try {
+                  const doc = makeUserDocFromOAuth(user);
+                  const result = await insertUserDoc(doc);
+                  console.log('Inserted OAuth user into MongoDB, insertedId:', result.insertedId);
+                  safeSendAuthResult({ success: true, insertedId: result.insertedId });
+                } catch (err) {
+                  console.error('MongoDB insert error:', err);
+                  safeSendAuthResult({ success: false, error: err.message });
+                }
+
+                res.end('Success! User data saved to DB. You can close this window.');
+              });
+            });
+
+            userReq.on('error', (err) => {
+              console.error('User info error:', err);
+              safeSendAuthResult({ success: false, error: err.message });
+              res.end('Failed to fetch user info.');
+            });
+
+            userReq.end();
+          });
+        });
+
+        tokenReq.on('error', (err) => {
+          console.error('Token request error:', err);
+          safeSendAuthResult({ success: false, error: err.message });
+          res.end('Failed to exchange code for token.');
+        });
+
+        tokenReq.write(postData);
+        tokenReq.end();
+      } else {
+        res.end('No code received.');
+      }
+    }).listen(3000, () => {
+      console.log('Local auth server listening on port 3000');
+    });
+
+    authServer.on('error', (err) => {
+      console.error('Server error:', err);
+    });
+  }
+});
+
+function safeSendAuthResult(payload) {
+  try {
+    if (mainWindow && mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
+      mainWindow.webContents.send('auth-result', payload);
+    }
+  } catch (e) {
+    
+    console.error('Failed to send auth-result to renderer', e);
   }
 }
 

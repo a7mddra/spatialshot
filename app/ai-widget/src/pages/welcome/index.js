@@ -4,7 +4,7 @@ let isActivated = false;
 /**
  * Renders the welcome screen.
  */
-function onAppStart() {
+function onAppStart(activateAiTab) {
   const welcomeScreen = document.getElementById('welcome-screen');
   if (welcomeScreen) {
     welcomeScreen.style.display = 'flex';
@@ -18,6 +18,18 @@ function onAppStart() {
       }
     }
   }
+
+  window.electronAPI.onAuthResult((result) => {
+    if (result && result.success) {
+      isActivated = true;
+      if (welcomeScreen) {
+        welcomeScreen.style.display = 'none';
+      }
+      activateAiTab();
+    } else {
+      console.error('Authentication failed', result && result.error);
+    }
+  });
 }
 
 /**
@@ -25,12 +37,7 @@ function onAppStart() {
  * @param {() => void} activateAiTab - Function to activate the AI tab.
  */
 function onActivate(activateAiTab) {
-  isActivated = true;
-  const welcomeScreen = document.getElementById('welcome-screen');
-  if (welcomeScreen) {
-    welcomeScreen.style.display = 'none';
-  }
-  activateAiTab();
+  window.electronAPI.startAuth();
 }
 
 /**

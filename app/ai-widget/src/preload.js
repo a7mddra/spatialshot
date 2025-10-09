@@ -80,5 +80,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     } catch (e) {
       return false;
     }
+  },
+  startAuth: () => ipcRenderer.send('start-auth'),
+  onAuthResult: (cb) => {
+    ipcRenderer.on('auth-result', (event, data) => {
+      cb(data);
+    });
   }
 });
