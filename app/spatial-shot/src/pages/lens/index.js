@@ -1,6 +1,5 @@
 import { WebviewBuilder } from '../../shared/webview-builder.js';
 import { LENS_AUTOMATION_SCRIPT, sendPasteKeyEvents } from '../../shared/webview-uploader.js';
-import { sendEnsureMaximized } from '../../shared/ipc-bridge.js';
 import { CaptchaDetector } from '../../shared/captcha-detector.js';
 
 export function createPage() {
@@ -32,7 +31,6 @@ export function createPage() {
 
   webview.addEventListener('dom-ready', () => {
     console.log('Lens DOM ready (page-level)');
-    sendEnsureMaximized();
     webview.executeJavaScript(LENS_AUTOMATION_SCRIPT).catch(console.warn);
     sendPasteKeyEvents(webview, 500);
 

@@ -1,6 +1,5 @@
 import { CaptchaDetector } from '../../shared/captcha-detector.js';
-import { sendEnsureMaximized } from '../../shared/ipc-bridge.js';
-import { startContinuousPasteUntilUploadComplete } from './uploader.js';
+import { uploadImage } from './uploader.js';
 
 /**
  * Sets up event listeners
@@ -11,12 +10,11 @@ export function setupAIEvents(webview, overlay) {
   const startPaste = () => {
     if (pasteStarted) return;
     pasteStarted = true;
-    startContinuousPasteUntilUploadComplete(webview, overlay);
+    uploadImage(webview, overlay);
   };
 
   webview.addEventListener('dom-ready', () => {
     console.log('AI Overview page ready');
-    sendEnsureMaximized();
     startPaste();
   });
 

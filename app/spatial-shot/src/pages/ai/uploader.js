@@ -4,7 +4,7 @@ import { injectAIPrompt } from './prompt-injector.js';
 /**
  * Continuously paste until upload is detected AND completed, then inject prompt
  */
-export function startContinuousPasteUntilUploadComplete(webview, overlay) {
+export function uploadImage(webview, overlay) {
   let pasteInterval;
   let checkInterval;
   let maxAttempts = 50;

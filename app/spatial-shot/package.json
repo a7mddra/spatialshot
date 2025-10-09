@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/package.json",
   "name": "spatial-shot",
   "version": "1.0.0",
-  "description": "AI widget for handling the screenshots taken from the main app.",
+  "description": "AI and contextual analysis module for screenshot data.",
   "main": "src/main.js",
   "type": "commonjs",
   "author": "a7md <a7mddra@gmail.com>",

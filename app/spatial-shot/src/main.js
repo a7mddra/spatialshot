@@ -22,13 +22,12 @@ try {
   app.setAppUserModelId('com.a7md.ai-widget');
 } catch (e) { }
 
+let win;
+
 function createWindow() {
-  const win = new BrowserWindow({
-    width: 400,
-    height: 572,
+  win = new BrowserWindow({
     frame: false,
     transparent: true,
-    alwaysOnTop: false,
     resizable: true,
     skipTaskbar: false,
     hasShadow: true,
@@ -42,9 +41,9 @@ function createWindow() {
     }
   });
 
-
+  win.maximize();
+  win.show();
   win.setVisibleOnAllWorkspaces(true);
-
   win.loadFile(path.join(__dirname, 'renderer/index.html'));
 
   win.once('ready-to-show', () => {
@@ -100,53 +99,28 @@ ipcMain.on('get-image-path', (event) => {
   event.returnValue = currentImagePath;
 });
 
-ipcMain.handle('copy-original-image', async (event, imagePath) => {
+ipcMain.handle('copy-image', async (event, imagePath) => {
   try {
-    
-    
     if (!fs.existsSync(imagePath)) {
       console.error('Image file does not exist:', imagePath);
       return false;
     }
-
-    
     const stats = fs.statSync(imagePath);
     if (!stats.isFile()) {
       console.error('Path is not a file:', imagePath);
       return false;
     }
-
-    
     const image = nativeImage.createFromPath(imagePath);
-    
     if (image.isEmpty()) {
       console.error('Failed to create image from path:', imagePath);
       return false;
     }
-
-    
     clipboard.writeImage(image);
     return true;
-    
   } catch (error) {
-    console.error('Error in copy-original-image handler:', error);
+    console.error('Error in copy-image handler:', error);
     return false;
   }
-});
-
-ipcMain.handle('ensure-maximized', (event) => {
-  try {
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      if (!mainWindow.isMaximized()) {
-        mainWindow.maximize();
-      } else {
-      }
-      return true;
-    }
-  } catch (e) {
-    console.warn('ensure-maximized failed:', e && e.message);
-  }
-  return false;
 });
 
 ipcMain.handle('clear-webview-cache', async (event, partition) => {
@@ -164,11 +138,8 @@ ipcMain.handle('clear-webview-cache', async (event, partition) => {
 });
 
 app.whenReady().then(() => {
-  
   currentImagePath = getImagePathFromArgs();
-  
   mainWindow = createWindow();
-
   const googleSession = session.fromPartition('persist:google');
   googleSession.webRequest.onBeforeSendHeaders((details, callback) => {
     details.requestHeaders['Accept-Language'] = 'en-US,en;q=0.9';
@@ -189,7 +160,6 @@ app.on('window-all-closed', () => {
 });
 
 app.on('second-instance', (event, commandLine, workingDirectory) => {
-  
   const newImagePath = getImagePathFromArgs();
   if (newImagePath) {
     currentImagePath = newImagePath;
@@ -262,30 +232,6 @@ function makeUserDocFromOAuth(user) {
     createdAt: new Date()
   };
 }
-
-ipcMain.handle('add-user', async (event, maybeUser) => {
-  try {
-    let doc;
-    if (maybeUser && typeof maybeUser === 'object') {
-      doc = makeUserDocFromOAuth(maybeUser);
-    } else {
-      doc = {
-        _id: `test_user_${Date.now()}`,
-        name: "Test User",
-        email: "test@example.com",
-        photoURL: "",
-        lastLogin: new Date(),
-        createdAt: new Date()
-      };
-    }
-
-    const result = await insertUserDoc(doc);
-    return { success: true, insertedId: result.insertedId };
-  } catch (error) {
-    console.error(error);
-    return { success: false, error: error.message };
-  }
-});
 
 ipcMain.on('start-auth', () => {
   const authUrl =
@@ -362,7 +308,6 @@ ipcMain.on('start-auth', () => {
                   res.end('Failed to fetch user info.');
                   return;
                 }
-
                 
                 try {
                   const doc = makeUserDocFromOAuth(user);

@@ -6,15 +6,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
       clipboard.writeText(String(text));
       return true;
     } catch (e) {
+      console.error('Failed to copy text:', e);
       return false;
     }
   },
 
-  copyOriginalImage: (imagePath) => {
+  copyImage: (imagePath) => {
     try {
-      return ipcRenderer.invoke('copy-original-image', imagePath);
+      return ipcRenderer.invoke('copy-image', imagePath);
     } catch (e) {
-      console.error('Failed to copy original image:', e);
+      console.error('Failed to copy image:', e);
       return false;
     }
   },
@@ -24,6 +25,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.send('minimize-window');
       return true;
     } catch (e) {
+      console.error('Failed to minimize window:', e);
       return false;
     }
   },
@@ -33,24 +35,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.send('maximize-window');
       return true;
     } catch (e) {
+      console.error('Failed to maximize window:', e);
       return false;
     }
-  },
-
-  ensureMaximized: () => {
-    try {
-      ipcRenderer.invoke('ensure-maximized');
-      return true;
-    } catch (e) {
-      return false;
-    }
-      
   },
 
   getImagePath: () => {
     try {
       return ipcRenderer.sendSync('get-image-path');
     } catch (e) {
+      console.error('Failed to get image path:', e);
       return null;
     }
   },
@@ -60,6 +54,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('image-path-updated', (event, path) => callback(path));
       return true;
     } catch (e) {
+      console.error('Failed to set image path update listener:', e);
       return false;
     }
   },
@@ -78,13 +73,30 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.removeAllListeners(channel);
       return true;
     } catch (e) {
+      console.error('Failed to remove all listeners:', e);
       return false;
     }
   },
-  startAuth: () => ipcRenderer.send('start-auth'),
+
+  startAuth: () => {
+    try {
+      ipcRenderer.send('start-auth');
+      return true;
+    } catch (e) {
+      console.error('Failed to start auth:', e);
+      return false;
+    }
+  },
+
   onAuthResult: (cb) => {
-    ipcRenderer.on('auth-result', (event, data) => {
-      cb(data);
-    });
+    try {
+      ipcRenderer.on('auth-result', (event, data) => {
+        cb(data);
+      });
+      return true;
+    } catch (e) {
+      console.error('Failed to set auth result listener:', e);
+      return false;
+    }
   }
 });
