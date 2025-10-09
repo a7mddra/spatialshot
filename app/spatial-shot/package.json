@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "name": "ai-widget",
+  "name": "spatial-shot",
   "version": "1.0.0",
   "description": "AI widget for handling the screenshots taken from the main app.",
   "main": "src/main.js",
@@ -22,8 +22,8 @@
     "electron-builder": "^26.0.12"
   },
   "build": {
-    "appId": "com.a7md.ai-widget",
-    "productName": "AI Widget",
+    "appId": "com.a7md.spatial-shot",
+    "productName": "Spatial Shot",
     "directories": {
       "output": "dist"
     },

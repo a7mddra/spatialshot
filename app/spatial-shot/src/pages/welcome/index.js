@@ -1,9 +1,6 @@
 
 let isActivated = false;
 
-/**
- * Renders the welcome screen.
- */
 function onAppStart(activateAiTab) {
   const welcomeScreen = document.getElementById('welcome-screen');
   if (welcomeScreen) {
@@ -11,7 +8,6 @@ function onAppStart(activateAiTab) {
   }
   const contentContainer = document.getElementById('content-container');
   if (contentContainer) {
-    // Hide all other pages
     for (const child of contentContainer.children) {
       if (child.id !== 'welcome-screen') {
         child.style.display = 'none';
@@ -32,19 +28,10 @@ function onAppStart(activateAiTab) {
   });
 }
 
-/**
- * Hides the welcome screen and activates the AI tab.
- * @param {() => void} activateAiTab - Function to activate the AI tab.
- */
 function onActivate(activateAiTab) {
   window.electronAPI.startAuth();
 }
 
-/**
- * Handles tab clicks. If not activated, it does nothing.
- * @param {string} tabId - The ID of the tab that was clicked.
- * @returns {boolean} - Whether the navigation should proceed.
- */
 function onTabClick(tabId) {
   return isActivated;
 }

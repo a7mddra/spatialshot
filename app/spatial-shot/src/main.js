@@ -102,7 +102,6 @@ ipcMain.on('get-image-path', (event) => {
 
 ipcMain.handle('copy-original-image', async (event, imagePath) => {
   try {
-    console.log('Copying original image:', imagePath);
     
     
     if (!fs.existsSync(imagePath)) {
@@ -127,7 +126,6 @@ ipcMain.handle('copy-original-image', async (event, imagePath) => {
 
     
     clipboard.writeImage(image);
-    console.log('Successfully copied original image to clipboard');
     return true;
     
   } catch (error) {
@@ -141,9 +139,7 @@ ipcMain.handle('ensure-maximized', (event) => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       if (!mainWindow.isMaximized()) {
         mainWindow.maximize();
-        console.log('Window maximized by ensure-maximized handler');
       } else {
-        console.log('Window already maximized');
       }
       return true;
     }
@@ -292,7 +288,11 @@ ipcMain.handle('add-user', async (event, maybeUser) => {
 });
 
 ipcMain.on('start-auth', () => {
-  const authUrl = `${o2.auth}?client_id=${o2.id}&redirect_uri=${encodeURIComponent(o2.redirect)}&scope=${encodeURIComponent(o2.scope)}&response_type=code`;
+  const authUrl =
+    `${o2.auth}?client_id=${o2.id}` +
+    `&redirect_uri=${encodeURIComponent(o2.redirect)}` +
+    `&scope=${encodeURIComponent(o2.scope)}` +
+    `&response_type=code`;
 
   shell.openExternal(authUrl);
 
@@ -302,7 +302,12 @@ ipcMain.on('start-auth', () => {
       const code = parsedUrl.query.code;
 
       if (code) {
-        const postData = `code=${code}&client_id=${o2.id}&client_secret=${o2.secret}&redirect_uri=${o2.redirect}&grant_type=authorization_code`;
+        const postData =
+          `code=${code}` +
+          `&client_id=${o2.id}` +
+          `&client_secret=${o2.secret}` +
+          `&redirect_uri=${o2.redirect}` +
+          `&grant_type=authorization_code`;
 
         const tokenOptions = {
           hostname: 'oauth2.googleapis.com',
@@ -362,7 +367,6 @@ ipcMain.on('start-auth', () => {
                 try {
                   const doc = makeUserDocFromOAuth(user);
                   const result = await insertUserDoc(doc);
-                  console.log('Inserted OAuth user into MongoDB, insertedId:', result.insertedId);
                   safeSendAuthResult({ success: true, insertedId: result.insertedId });
                 } catch (err) {
                   console.error('MongoDB insert error:', err);
@@ -395,7 +399,6 @@ ipcMain.on('start-auth', () => {
         res.end('No code received.');
       }
     }).listen(3000, () => {
-      console.log('Local auth server listening on port 3000');
     });
 
     authServer.on('error', (err) => {
@@ -414,7 +417,3 @@ function safeSendAuthResult(payload) {
     console.error('Failed to send auth-result to renderer', e);
   }
 }
-
-console.log('main process started, __dirname=', __dirname);
-console.log('NODE_ENV=', process.env.NODE_ENV);
-console.log('Image path from args:', currentImagePath);

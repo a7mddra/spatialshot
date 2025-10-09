@@ -1,9 +1,8 @@
+doc/TODO
+app/dist
+app/output
 app/node_modules
 app/package-lock.json
-app/output
-app/dist
-app/ai-widget/node_modules
-app/ai-widget/package-lock.json
-doc/TODO
-app/ai-widget/src/config.private.json
-app/ai-widget/src/auth-demo-app
+app/spatial-shot/node_modules
+app/spatial-shot/package-lock.json
+app/spatial-shot/src/config.private.json
