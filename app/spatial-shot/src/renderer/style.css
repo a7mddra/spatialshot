@@ -21,7 +21,6 @@ body {
     background: rgba(30, 30, 30, 0.95);
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border-radius: 10px;
     display: flex;
     flex-direction: column;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
@@ -42,13 +41,27 @@ body {
     }
 }
 
+/* Top bar container */
+.top-bar {
+    display: flex;
+    align-items: center;
+    padding: 0 21px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.drag-region {
+    -webkit-app-region: drag;
+    flex-grow: 1;
+    height: 100%;
+}
+
 /* Traffic Light Buttons */
 .traffic-lights {
     display: flex;
     align-items: center;
-    padding: 16px 21px 10px 21px;
-    -webkit-app-region: drag;
+    padding: 16px 0;
     gap: 10px;
+    margin-right: 10px;
 }
 
 .traffic-light-btn {
@@ -155,15 +168,11 @@ body {
     background: rgba(255, 255, 255, 0.3);
 }
 
-
-
-.category-nav {
+.category-nav-left,
+.category-nav-right {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(25, 25, 25, 0.5);
+    gap: 10px;
+    -webkit-app-region: no-drag;
 }
 
 .cat-btn {
@@ -188,17 +197,7 @@ body {
     background: rgba(255, 255, 255, 0.15);
 }
 
-.cat-btn.active::after {
-    content: '';
-    position: absolute;
-    bottom: -10px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 26px;
-    height: 3px;
-    background: rgba(255, 255, 255, 0.5);
-    border-radius: 1px;
-}
+
 
 /* SVG Icon Styling */
 .cat-btn img {
