@@ -144,6 +144,27 @@ ipcMain.handle('get-user-data', async () => {
 
 ipcMain.on('logout', () => {
   userDataManager.clearUserData();
+
+  try {
+    const logoutWindow = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        partition: 'persist:google'
+      }
+    });
+
+    logoutWindow.loadURL('https://accounts.google.com/logout');
+
+    logoutWindow.webContents.on('did-finish-load', () => {
+        if (logoutWindow && !logoutWindow.isDestroyed()) {
+            logoutWindow.close();
+        }
+    });
+
+  } catch (error) {
+    console.error('Failed to execute Google logout:', error);
+  }
+
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('logged-out');
   }
@@ -323,12 +344,32 @@ ipcMain.on('start-auth', () => {
     `${o2.auth}?client_id=${o2.id}` +
     `&redirect_uri=${encodeURIComponent(o2.redirect)}` +
     `&scope=${encodeURIComponent(o2.scope)}` +
-    `&response_type=code`;
+    `&response_type=code` +
+    `&access_type=offline&prompt=consent`;
 
-  shell.openExternal(authUrl);
+  let authWindow = new BrowserWindow({
+    width: 800,
+    height: 600,
+    show: true,
+    webPreferences: {
+      partition: 'persist:google',
+      contextIsolation: false,
+      nodeIntegration: false
+    }
+  });
+
+  authWindow.loadURL(authUrl);
+  authWindow.show();
+
+  authWindow.on('closed', () => {
+    authWindow = null;
+  });
 
   if (!authServer) {
     authServer = http.createServer((req, res) => {
+      if (authWindow) {
+        authWindow.close();
+      }
       const parsedUrl = urlm.parse(req.url, true);
       const code = parsedUrl.query.code;
 
@@ -400,10 +441,11 @@ ipcMain.on('start-auth', () => {
                     id: user.sub,
                     name: doc.name,
                     email: doc.email,
-                    photoURL: doc.photoURL
+                    photoURL: doc.photoURL,
+                    refreshToken: tokens.refresh_token
                   };
                   userDataManager.saveUserData(userData);
-                  const result = await insertUserDoc(doc);
+                  const result = await insertUserDoc({ ...doc, refreshToken: tokens.refresh_token });
                   safeSendAuthResult({ success: true, insertedId: result.insertedId, user: userData });
                 } catch (err) {
                   console.error('MongoDB insert or user data save error:', err);
