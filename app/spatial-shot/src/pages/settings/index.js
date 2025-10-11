@@ -57,8 +57,8 @@ export function createPage() {
   const clearCacheBtn = createButton('clearCacheBtn', 'fas fa-broom', 'Clear Cache');
 
   settingsButtons.appendChild(darkModeBtn);
-  settingsButtons.appendChild(promptBtn);
   settingsButtons.appendChild(clearCacheBtn);
+  settingsButtons.appendChild(promptBtn);
   settingsCategory.appendChild(settingsTitle);
   settingsCategory.appendChild(settingsButtons);
 
@@ -78,9 +78,9 @@ export function createPage() {
   // Premium Button
   const premiumBtn = createButton('premiumBtn', 'fas fa-crown', 'Spatial Shot Premium', false, true);
 
+  otherButtons.appendChild(premiumBtn);
   otherButtons.appendChild(githubBtn);
   otherButtons.appendChild(bugBtn);
-  otherButtons.appendChild(premiumBtn);
   otherCategory.appendChild(otherButtons);
 
   // Account Category
