@@ -28,14 +28,8 @@ export function createPage() {
     }
   })();
 
-  // Settings Category
-  const settingsCategory = document.createElement('div');
-  settingsCategory.className = 'category';
-  const settingsTitle = document.createElement('div');
-  settingsTitle.className = 'category-title';
-  settingsTitle.textContent = 'Settings';
-  const settingsButtons = document.createElement('div');
-  settingsButtons.className = 'button-group';
+  const buttonGroup = document.createElement('div');
+  buttonGroup.className = 'button-group';
 
   // Dark Mode Button
   const darkModeBtn = createButton('darkModeBtn', 'fas fa-moon', 'Dark Mode', true);
@@ -56,18 +50,6 @@ export function createPage() {
   // Clear Cache Button
   const clearCacheBtn = createButton('clearCacheBtn', 'fas fa-broom', 'Clear Cache');
 
-  settingsButtons.appendChild(darkModeBtn);
-  settingsButtons.appendChild(clearCacheBtn);
-  settingsButtons.appendChild(promptBtn);
-  settingsCategory.appendChild(settingsTitle);
-  settingsCategory.appendChild(settingsButtons);
-
-  // Other Category
-  const otherCategory = document.createElement('div');
-  otherCategory.className = 'category';
-  const otherButtons = document.createElement('div');
-  otherButtons.className = 'button-group';
-
   // GitHub Button
   const githubBtn = createButton(null, 'fab fa-github', 'GitHub Repository');
   githubBtn.addEventListener('click', () => electronAPI.openExternal('https://github.com/a7mddra/spatial-shot'));
@@ -77,20 +59,6 @@ export function createPage() {
 
   // Premium Button
   const premiumBtn = createButton('premiumBtn', 'fas fa-crown', 'Spatial Shot Premium', false, true);
-
-  otherButtons.appendChild(premiumBtn);
-  otherButtons.appendChild(githubBtn);
-  otherButtons.appendChild(bugBtn);
-  otherCategory.appendChild(otherButtons);
-
-  // Account Category
-  const accountCategory = document.createElement('div');
-  accountCategory.className = 'category';
-  const accountTitle = document.createElement('div');
-  accountTitle.className = 'category-title';
-  accountTitle.textContent = 'Account';
-  const accountButtons = document.createElement('div');
-  accountButtons.className = 'button-group';
 
   // Log Out Button
   const logoutBtn = createButton(null, 'fas fa-sign-out-alt', 'Log Out');
@@ -102,15 +70,17 @@ export function createPage() {
   // Delete Account Button
   const deleteBtn = createButton('deleteAccountBtn', 'fas fa-trash-alt', 'Delete Account');
 
-  accountButtons.appendChild(logoutBtn);
-  accountButtons.appendChild(deleteBtn);
-  accountCategory.appendChild(accountTitle);
-  accountCategory.appendChild(accountButtons);
+  buttonGroup.appendChild(darkModeBtn);
+  buttonGroup.appendChild(clearCacheBtn);
+  buttonGroup.appendChild(promptBtn);
+  buttonGroup.appendChild(premiumBtn);
+  buttonGroup.appendChild(githubBtn);
+  buttonGroup.appendChild(bugBtn);
+  buttonGroup.appendChild(logoutBtn);
+  buttonGroup.appendChild(deleteBtn);
 
   page.appendChild(userInfo);
-  page.appendChild(settingsCategory);
-  page.appendChild(otherCategory);
-  page.appendChild(accountCategory);
+  page.appendChild(buttonGroup);
 
   return page;
 }

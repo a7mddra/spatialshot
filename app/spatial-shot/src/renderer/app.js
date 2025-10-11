@@ -79,10 +79,8 @@ function showFeedbackMessage(message, type) {
     }, 3000);
 }
 
-function initializeSidePanel() {
+function initializeSettingsPanel() {
     const panel = document.getElementById('panel');
-    const panelOverlay = document.getElementById('panelOverlay');
-    const closeBtn = document.getElementById('closeBtn');
     const welcomeScreen = document.getElementById('welcome-screen');
     const settingsContent = document.getElementById('settings-content');
 
@@ -98,28 +96,18 @@ function initializeSidePanel() {
             if (welcomeScreen.style.display !== 'none') return;
 
             panel.classList.toggle('active');
-            panelOverlay.classList.toggle('active');
-        });
-    }
-    
-    if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-            panel.classList.remove('active');
-            panelOverlay.classList.remove('active');
-        });
-    }
-    
-    if (panelOverlay) {
-        panelOverlay.addEventListener('click', () => {
-            panel.classList.remove('active');
-            panelOverlay.classList.remove('active');
         });
     }
     
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && panel.classList.contains('active')) {
             panel.classList.remove('active');
-            panelOverlay.classList.remove('active');
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!panel.contains(e.target) && !settingsBtn.contains(e.target)) {
+            panel.classList.remove('active');
         }
     });
 
@@ -306,7 +294,7 @@ async function initializeApp() {
     }
   });
 
-  initializeSidePanel();
+  initializeSettingsPanel();
 }
 
 document.addEventListener('DOMContentLoaded', initializeApp);
