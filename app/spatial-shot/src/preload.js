@@ -68,6 +68,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     }
   },
 
+  clearCache: () => {
+    try {
+      return ipcRenderer.invoke('clear-cache');
+    } catch (e) {
+      console.error('Failed to clear cache:', e);
+      return false;
+    }
+  },
+
   removeAllListeners: (channel) => {
     try {
       ipcRenderer.removeAllListeners(channel);

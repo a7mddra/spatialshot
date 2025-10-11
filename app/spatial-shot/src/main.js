@@ -138,6 +138,19 @@ ipcMain.handle('clear-webview-cache', async (event, partition) => {
   return false;
 });
 
+ipcMain.handle('clear-cache', async () => {
+  try {
+    const allSessions = session.getAllSessions();
+    for (const s of allSessions) {
+      await s.clearCache();
+    }
+    return true;
+  } catch (error) {
+    console.error('Failed to clear all caches:', error);
+    return false;
+  }
+});
+
 ipcMain.handle('get-user-data', async () => {
   return userDataManager.getUserData();
 });

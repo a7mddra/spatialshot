@@ -1,4 +1,4 @@
-this web page has a side panel similar to my settings panel you should implement the content in it for my settings panel but with the same style, animations, colors, everything. your working environment will be at renderer and pages/settings here you will find all you want to implement it well.
+implement the colors and animations used in this webpage to my settings panel they have the same structure. your working environment will be at renderer and pages/settings here you will find all you want to implement them well.
 
 <!DOCTYPE html>
 <html lang="en">

@@ -1,4 +1,5 @@
 import * as welcome from '../pages/welcome/index.js';
+import { createPage as createSettingsPage } from '../pages/settings/index.js';
 
 const pageMap = {
   ai:       '../pages/ai/index.js',
@@ -68,11 +69,26 @@ async function renderCategory(category) {
   }
 }
 
+function showFeedbackMessage(message, type) {
+    const feedbackMessage = document.getElementById('feedbackMessage');
+    feedbackMessage.textContent = message;
+    feedbackMessage.className = 'feedback-message';
+    feedbackMessage.classList.add(type, 'show');
+    
+    setTimeout(() => {
+        feedbackMessage.classList.remove('show');
+    }, 3000);
+}
+
 function initializeSidePanel() {
     const panel = document.getElementById('panel');
     const panelOverlay = document.getElementById('panelOverlay');
     const closeBtn = document.getElementById('closeBtn');
     const welcomeScreen = document.getElementById('welcome-screen');
+    const settingsContent = document.getElementById('settings-content');
+
+    const settingsPage = createSettingsPage();
+    settingsContent.appendChild(settingsPage);
 
     const settingsBtn = document.querySelector('.cat-btn[data-category="settings"]');
     if (settingsBtn) {
@@ -107,6 +123,34 @@ function initializeSidePanel() {
             panelOverlay.classList.remove('active');
         }
     });
+
+    const darkModeBtn = document.getElementById('darkModeBtn');
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    if (darkModeBtn) {
+        darkModeBtn.addEventListener('click', () => {
+            darkModeToggle.checked = !darkModeToggle.checked;
+            electronAPI.toggleTheme();
+        });
+    }
+
+    const clearCacheBtn = document.getElementById('clearCacheBtn');
+    if(clearCacheBtn) {
+        clearCacheBtn.addEventListener('click', () => {
+            electronAPI.clearCache();
+            showFeedbackMessage('Cache cleared', 'success');
+        });
+    }
+
+    const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+    if(deleteAccountBtn) {
+        deleteAccountBtn.addEventListener('click', async () => {
+            const userData = await electronAPI.getUserData();
+            if (userData && confirm('Are you sure you want to permanently delete your account? This action cannot be undone.')) {
+                await electronAPI.deleteAccount(userData.email);
+                window.location.reload();
+            }
+        });
+    }
 }
 
 function updateUserAvatar(photoURL) {
