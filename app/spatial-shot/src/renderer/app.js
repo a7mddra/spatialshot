@@ -1,9 +1,13 @@
-import * as welcome from '../pages/welcome/index.js';
-import { createPage as createSettingsPage, updateUserInfo } from '../pages/settings/index.js';
+import * as welcome from "../pages/welcome/index.js";
+import { showFeedbackMessage } from "../shared/utils.js";
+import {
+  createPage as createSettingsPage,
+  updateUserInfo,
+} from "../pages/settings/index.js";
 
 const pageMap = {
-  ai:       '../pages/ai/index.js',
-  lens:     '../pages/lens/index.js',
+  ai: "../pages/ai/index.js",
+  lens: "../pages/lens/index.js",
 };
 
 let currentImagePath = null;
@@ -18,17 +22,17 @@ async function loadPageModule(category) {
     const mod = await import(modulePath);
     return mod;
   } catch (err) {
-    console.error('Failed to import page', modulePath, err);
+    console.error("Failed to import page", modulePath, err);
     return null;
   }
 }
 
 async function renderCategory(category) {
-  const container = document.getElementById('content-container');
+  const container = document.getElementById("content-container");
   if (!container) return;
 
   if (isRendering && currentCategory === category) {
-    console.log('renderCategory: already rendering', category);
+    console.log("renderCategory: already rendering", category);
     return;
   }
 
@@ -37,135 +41,153 @@ async function renderCategory(category) {
 
   try {
     for (const child of container.children) {
-      child.style.display = 'none';
+      child.style.display = "none";
     }
 
     if (pageCache[category]) {
-      pageCache[category].style.display = 'flex';
+      pageCache[category].style.display = "flex";
     } else {
       const mod = await loadPageModule(category);
       let pageEl;
-      if (mod && typeof mod.createPage === 'function') {
+      if (mod && typeof mod.createPage === "function") {
         pageEl = mod.createPage(currentImagePath);
       } else {
-        pageEl = document.createElement('div');
-        pageEl.className = 'page-center';
-        const message = document.createElement('div');
-        message.className = 'page-text';
+        pageEl = document.createElement("div");
+        pageEl.className = "page-center";
+        const message = document.createElement("div");
+        message.className = "page-text";
         message.textContent = currentImagePath
           ? `Processing image for ${category}...`
-          : 'No image provided. Please launch with an image path.';
+          : "No image provided. Please launch with an image path.";
         pageEl.appendChild(message);
       }
       pageCache[category] = pageEl;
       container.appendChild(pageEl);
-      pageEl.style.display = 'flex';
+      pageEl.style.display = "flex";
     }
   } catch (err) {
-    console.error('renderCategory error', err);
+    console.error("renderCategory error", err);
   } finally {
     isRendering = false;
   }
 }
 
-function showFeedbackMessage(message, type) {
-    const feedbackMessage = document.getElementById('feedbackMessage');
-    feedbackMessage.textContent = message;
-    feedbackMessage.className = 'feedback-message';
-    feedbackMessage.classList.add(type, 'show');
-    
-    setTimeout(() => {
-        feedbackMessage.classList.remove('show');
-    }, 3000);
-}
-
 function initializeSettingsPanel() {
-    const panel = document.getElementById('panel');
-    const welcomeScreen = document.getElementById('welcome-screen');
-    const settingsContent = document.getElementById('settings-content');
+  const panel = document.getElementById("panel");
+  const welcomeScreen = document.getElementById("welcome-screen");
+  const settingsContent = document.getElementById("settings-content");
 
-    const settingsPage = createSettingsPage();
-    settingsContent.appendChild(settingsPage);
+  const settingsPage = createSettingsPage();
+  settingsContent.appendChild(settingsPage);
 
-    const settingsBtn = document.querySelector('.cat-btn[data-category="settings"]');
-    if (settingsBtn) {
-        settingsBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
+  const settingsBtn = document.querySelector(
+    '.cat-btn[data-category="settings"]'
+  );
+  if (settingsBtn) {
+    settingsBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
 
-            if (welcomeScreen.style.display !== 'none') return;
+      if (welcomeScreen.style.display !== "none") return;
 
-            panel.classList.toggle('active');
-        });
-    }
-    
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && panel.classList.contains('active')) {
-            panel.classList.remove('active');
-        }
+      panel.classList.toggle("active");
     });
+  }
 
-    document.addEventListener('click', (e) => {
-        if (!panel.contains(e.target) && !settingsBtn.contains(e.target)) {
-            panel.classList.remove('active');
-        }
+  // For panel Esc close
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && panel.classList.contains('active')) {
+      if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+        panel.classList.remove('active');
+      }
+    }
+  });
+
+  // For global Esc close window
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+        window.handleEscape();
+      }
+    }
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!panel.contains(e.target) && !settingsBtn.contains(e.target)) {
+      panel.classList.remove("active");
+    }
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!panel.contains(e.target) && !settingsBtn.contains(e.target)) {
+      panel.classList.remove("active");
+      const promptView = document.getElementById("promptView");
+      if (promptView) {
+        promptView.classList.remove("active");
+        const settingsPage = document.querySelector(".settings-page");
+        if (settingsPage) settingsPage.classList.remove("subview-active"); // Reset main content visibility
+      }
+    }
+  });
+
+  const darkModeBtn = document.getElementById("darkModeBtn");
+  const darkModeToggle = document.getElementById("darkModeToggle");
+  if (darkModeBtn) {
+    darkModeBtn.addEventListener("click", () => {
+      darkModeToggle.checked = !darkModeToggle.checked;
+      electronAPI.toggleTheme();
     });
+  }
 
-    const darkModeBtn = document.getElementById('darkModeBtn');
-    const darkModeToggle = document.getElementById('darkModeToggle');
-    if (darkModeBtn) {
-        darkModeBtn.addEventListener('click', () => {
-            darkModeToggle.checked = !darkModeToggle.checked;
-            electronAPI.toggleTheme();
-        });
-    }
+  const clearCacheBtn = document.getElementById("clearCacheBtn");
+  if (clearCacheBtn) {
+    clearCacheBtn.addEventListener("click", () => {
+      electronAPI.clearCache();
+      showFeedbackMessage("Cache cleared", "success");
+    });
+  }
 
-    const clearCacheBtn = document.getElementById('clearCacheBtn');
-    if(clearCacheBtn) {
-        clearCacheBtn.addEventListener('click', () => {
-            electronAPI.clearCache();
-            showFeedbackMessage('Cache cleared', 'success');
-        });
-    }
-
-    const deleteAccountBtn = document.getElementById('deleteAccountBtn');
-    if(deleteAccountBtn) {
-        deleteAccountBtn.addEventListener('click', async () => {
-            const userData = await electronAPI.getUserData();
-            if (userData && confirm('Are you sure you want to permanently delete your account? This action cannot be undone.')) {
-                await electronAPI.deleteAccount(userData.email);
-                window.location.reload();
-            }
-        });
-    }
+  const deleteAccountBtn = document.getElementById("deleteAccountBtn");
+  if (deleteAccountBtn) {
+    deleteAccountBtn.addEventListener("click", async () => {
+      const userData = await electronAPI.getUserData();
+      if (
+        userData &&
+        confirm(
+          "Are you sure you want to permanently delete your account? This action cannot be undone."
+        )
+      ) {
+        await electronAPI.deleteAccount(userData.email);
+        window.location.reload();
+      }
+    });
+  }
 }
-
-
 
 async function preLoadCategory(category) {
-  const container = document.getElementById('content-container');
+  const container = document.getElementById("content-container");
   if (!container || pageCache[category]) return;
 
   try {
     const mod = await loadPageModule(category);
     let pageEl;
-    if (mod && typeof mod.createPage === 'function') {
+    if (mod && typeof mod.createPage === "function") {
       pageEl = mod.createPage(currentImagePath);
     } else {
-      pageEl = document.createElement('div');
-      pageEl.className = 'page-center';
-      const message = document.createElement('div');
-      message.className = 'page-text';
+      pageEl = document.createElement("div");
+      pageEl.className = "page-center";
+      const message = document.createElement("div");
+      message.className = "page-text";
       message.textContent = currentImagePath
         ? `Processing image for ${category}...`
-        : 'No image provided. Please launch with an image path.';
+        : "No image provided. Please launch with an image path.";
       pageEl.appendChild(message);
     }
     pageCache[category] = pageEl;
     container.appendChild(pageEl);
-    pageEl.style.display = 'none';
+    pageEl.style.display = "none";
   } catch (err) {
-    console.error('preLoadCategory error', err);
+    console.error("preLoadCategory error", err);
   }
 }
 
@@ -175,7 +197,7 @@ async function initializeApp() {
   currentImagePath = electronAPI?.getImagePath?.() || null;
 
   electronAPI?.onImagePathUpdate?.(async (newImagePath) => {
-    console.log('Image path updated:', newImagePath);
+    console.log("Image path updated:", newImagePath);
     currentImagePath = newImagePath;
 
     if (currentCategory) {
@@ -185,38 +207,39 @@ async function initializeApp() {
 
   let lastClickInfo = { time: 0, category: null };
 
-  document.querySelectorAll('.cat-btn').forEach(btn => {
+  document.querySelectorAll(".cat-btn").forEach((btn) => {
     const category = btn.dataset.category;
-    btn.addEventListener('click', async () => {
-      if (!category || category === 'settings') return;
+    btn.addEventListener("click", async () => {
+      if (!category || category === "settings") return;
 
       if (welcome.onTabClick(category)) {
         const now = Date.now();
         const { time, category: lastCategory } = lastClickInfo;
 
         if (lastCategory === category && now - time < 300) {
-
           if (pageCache[category]) {
-            const webview = pageCache[category].querySelector('webview');
+            const webview = pageCache[category].querySelector("webview");
             switch (category) {
-              case 'ai':
-              case 'lens':
+              case "ai":
+              case "lens":
                 if (webview) {
                   await webview._clearCache();
                   webview._safeReload();
                 }
                 break;
-              case 'settings':
+              case "settings":
                 break;
             }
           }
         } else {
           lastClickInfo = { time: now, category };
 
-          if (!btn.classList.contains('active')) {
-              document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-              btn.classList.add('active');
-              await renderCategory(category);
+          if (!btn.classList.contains("active")) {
+            document
+              .querySelectorAll(".cat-btn")
+              .forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            await renderCategory(category);
           }
         }
       }
@@ -226,15 +249,15 @@ async function initializeApp() {
   const activateAiTab = () => {
     const aiBtn = document.querySelector('.cat-btn[data-category="ai"]');
     if (aiBtn) {
-      aiBtn.classList.add('active');
-      renderCategory('ai');
-      preLoadCategory('lens');
+      aiBtn.classList.add("active");
+      renderCategory("ai");
+      preLoadCategory("lens");
     }
   };
 
-  const loginBtn = document.getElementById('login-btn');
+  const loginBtn = document.getElementById("login-btn");
   if (loginBtn) {
-    loginBtn.addEventListener('click', () => {
+    loginBtn.addEventListener("click", () => {
       electronAPI?.startAuth?.();
     });
   }
@@ -244,58 +267,52 @@ async function initializeApp() {
       welcome.onActivate(activateAiTab);
       updateUserInfo();
     } else {
-      console.error('Authentication failed:', result.error);
+      console.error("Authentication failed:", result.error);
     }
   });
 
   const userData = await electronAPI.getUserData();
   if (userData) {
-    welcome.onActivate(activateAiTab, true); 
+    welcome.onActivate(activateAiTab, true);
 
-    
-    electronAPI.verifyUserStatus(userData.email)
-      .then(verificationResult => {
+    electronAPI
+      .verifyUserStatus(userData.email)
+      .then((verificationResult) => {
         if (!verificationResult) return;
 
-        if (verificationResult.status === 'VALID') {
-          
+        if (verificationResult.status === "VALID") {
           electronAPI.saveUserData(verificationResult.user);
-          
-        } else if (verificationResult.status === 'NOT_FOUND') {
-          
+        } else if (verificationResult.status === "NOT_FOUND") {
           electronAPI.logout();
           window.location.reload();
         }
       })
-      .catch(error => {
-        
-        console.warn('Could not verify user status (likely offline): ', error.message);
+      .catch((error) => {
+        console.warn(
+          "Could not verify user status (likely offline): ",
+          error.message
+        );
       });
-
   } else {
     welcome.onAppStart();
   }
 
-  const closeBtn = document.querySelector('.close-btn');
-  if (closeBtn) closeBtn.addEventListener('click', () => window.close());
+  const closeBtn = document.querySelector(".close-btn");
+  if (closeBtn) closeBtn.addEventListener("click", () => window.close());
 
-  const minimizeBtn = document.querySelector('.minimize-btn');
-  if (minimizeBtn) minimizeBtn.addEventListener('click', () => electronAPI?.minimize?.());
+  const minimizeBtn = document.querySelector(".minimize-btn");
+  if (minimizeBtn)
+    minimizeBtn.addEventListener("click", () => electronAPI?.minimize?.());
 
-  const maximizeBtn = document.querySelector('.maximize-btn');
-  if (maximizeBtn) maximizeBtn.addEventListener('click', () => electronAPI?.maximize?.());
+  const maximizeBtn = document.querySelector(".maximize-btn");
+  if (maximizeBtn)
+    maximizeBtn.addEventListener("click", () => electronAPI?.maximize?.());
 
   window.handleEscape = () => {
     window.close();
   };
 
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      window.handleEscape();
-    }
-  });
-
   initializeSettingsPanel();
 }
 
-document.addEventListener('DOMContentLoaded', initializeApp);
+document.addEventListener("DOMContentLoaded", initializeApp);

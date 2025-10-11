@@ -76,9 +76,9 @@ export function createPage() {
   const { container: webviewContainer, webview } = WebviewBuilder.createAIWebview();
   pageContainer.appendChild(webviewContainer);
 
-  const overlay = createLoadingOverlay({ parent: pageContainer, initial: true });
+  // const overlay = createLoadingOverlay({ parent: pageContainer, initial: true });
 
-  setupAIEvents(webview, overlay);
+  // setupAIEvents(webview, overlay);
 
   return pageContainer;
 }
