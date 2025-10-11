@@ -15,11 +15,11 @@
 
 .panel {
     position: fixed;
-    top: 73px;
+    top: 74px;
     right: 18px;
     width: 300px;
     height: auto;
-    background: rgba(255, 255, 255, 0);
+    background: rgba(0, 0, 0, 0.116);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     box-shadow: var(--shadow);
@@ -73,7 +73,6 @@
     transition: var(--transition);
     flex-shrink: 0;
 }
-
 
 .user-details-wrapper {
     flex: 1;
@@ -154,11 +153,9 @@
     }
 }
 
-
 .user-details-wrapper:hover .marquee-container {
     animation-play-state: paused;
 }
-
 
 .logout-btn {
     background: transparent;
@@ -228,7 +225,8 @@
 
 .btn-text {
     flex: 1;
-    color: white;
+    color: rgb(255, 255, 255);
+    font-weight: 600;
 }
 
 .btn-arrow {
@@ -256,7 +254,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #ccc;
+    background-color: #353141;
     transition: .4s;
     border-radius: 24px;
 }

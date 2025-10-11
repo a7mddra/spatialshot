@@ -1,5 +1,5 @@
 import * as welcome from '../pages/welcome/index.js';
-import { createPage as createSettingsPage } from '../pages/settings/index.js';
+import { createPage as createSettingsPage, updateUserInfo } from '../pages/settings/index.js';
 
 const pageMap = {
   ai:       '../pages/ai/index.js',
@@ -242,6 +242,7 @@ async function initializeApp() {
   electronAPI.onAuthResult(async (result) => {
     if (result.success && result.user) {
       welcome.onActivate(activateAiTab);
+      updateUserInfo();
     } else {
       console.error('Authentication failed:', result.error);
     }

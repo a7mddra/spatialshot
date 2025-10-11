@@ -150,5 +150,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
       console.error('Failed to delete account:', e);
       throw e;
     }
+  },
+
+  openExternal: (url) => {
+    try {
+      ipcRenderer.send('open-external', url);
+    } catch (e) {
+      console.error('Failed to open external link:', e);
+    }
   }
 });

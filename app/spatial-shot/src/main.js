@@ -96,6 +96,10 @@ ipcMain.on('maximize-window', () => {
   }
 });
 
+ipcMain.on('open-external', (event, url) => {
+  shell.openExternal(url);
+});
+
 ipcMain.on('get-image-path', (event) => {
   event.returnValue = currentImagePath;
 });

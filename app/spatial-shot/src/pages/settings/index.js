@@ -1,30 +1,32 @@
+let avatar, userName, userEmail;
+
 export function createPage() {
   const page = document.createElement('div');
   const electronAPI = window.electronAPI;
 
   const userInfo = document.createElement('div');
   userInfo.className = 'user-info';
-  
+
   const userInfoMain = document.createElement('div');
   userInfoMain.className = 'user-info-main';
-  
-  const avatar = document.createElement('img');
+
+  avatar = document.createElement('img');
   avatar.className = 'avatar';
-  
+
   const userDetailsWrapper = document.createElement('div');
   userDetailsWrapper.className = 'user-details-wrapper';
-  
+
   const userDetails = document.createElement('div');
   userDetails.className = 'user-details';
-  const userName = document.createElement('h3');
-  const userEmail = document.createElement('p');
+  userName = document.createElement('h3');
+  userEmail = document.createElement('p');
   userDetails.appendChild(userName);
   userDetails.appendChild(userEmail);
-  
+
   userDetailsWrapper.appendChild(userDetails);
   userInfoMain.appendChild(avatar);
   userInfoMain.appendChild(userDetailsWrapper);
-  
+
   const logoutBtn = document.createElement('button');
   logoutBtn.className = 'logout-btn';
   logoutBtn.title = 'Log Out';
@@ -32,7 +34,7 @@ export function createPage() {
   const logoutIcon = document.createElement('i');
   logoutIcon.className = 'fas fa-sign-out-alt';
   logoutBtn.appendChild(logoutIcon);
-  
+
   logoutBtn.addEventListener('click', () => {
     electronAPI.logout();
     window.location.reload();
@@ -41,22 +43,7 @@ export function createPage() {
   userInfo.appendChild(userInfoMain);
   userInfo.appendChild(logoutBtn);
 
-(async () => {
-  const userData = await electronAPI.getUserData();
-  if (userData) {
-    avatar.src = userData.photoURL;
-    userName.textContent = userData.name;
-    userEmail.textContent = userData.email;
-    
-    setTimeout(() => {
-      checkTextOverflow(userName, 'name');
-      checkTextOverflow(userEmail, 'email');
-    }, 100);
-  } else {
-    userName.textContent = 'Guest';
-    userEmail.textContent = 'Not logged in';
-  }
-})();
+  updateUserInfo();
 
   const buttonGroup = document.createElement('div');
   buttonGroup.className = 'button-group';
@@ -78,6 +65,7 @@ export function createPage() {
   const githubBtn = createButton(null, 'fab fa-github', 'GitHub Repository');
   githubBtn.addEventListener('click', () => electronAPI.openExternal('https://github.com/a7mddra/spatial-shot'));
   const bugBtn = createButton(null, 'fas fa-bug', 'Report Bug');
+  bugBtn.addEventListener('click', () => electronAPI.openExternal('https://api.whatsapp.com/send?phone=201019479808'));
   const premiumBtn = createButton('premiumBtn', 'fas fa-crown', 'Spatial Shot Premium', false, true);
   const deleteBtn = createButton('deleteAccountBtn', 'fas fa-trash-alt', 'Delete Account');
 
@@ -93,6 +81,23 @@ export function createPage() {
   page.appendChild(buttonGroup);
 
   return page;
+}
+
+export async function updateUserInfo() {
+  const userData = await window.electronAPI.getUserData();
+  if (userData) {
+    avatar.src = userData.photoURL;
+    userName.textContent = userData.name;
+    userEmail.textContent = userData.email;
+
+    setTimeout(() => {
+      checkTextOverflow(userName, 'name');
+      checkTextOverflow(userEmail, 'email');
+    }, 100);
+  } else {
+    userName.textContent = 'Guest';
+    userEmail.textContent = 'Not logged in';
+  }
 }
 
 function checkTextOverflow(textElement, elementType) {
