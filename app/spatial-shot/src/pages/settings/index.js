@@ -1,4 +1,7 @@
 import { showFeedbackMessage } from '../../shared/utils.js';
+import { createPromptView } from './prompt.js';
+import { createPremiumView } from './premium.js';
+
 let avatar, userName, userEmail;
 
 export function createPage() {
@@ -79,68 +82,26 @@ export function createPage() {
   buttonGroup.appendChild(bugBtn);
   buttonGroup.appendChild(deleteBtn);
 
-  const promptView = document.createElement('div');
-  promptView.className = 'prompt-view';
-  promptView.id = 'promptView';
+  // Create sub-views
+  const promptView = createPromptView(page, electronAPI, showFeedbackMessage);
+  const premiumView = createPremiumView(page, electronAPI, showFeedbackMessage);
 
-  const promptHeader = document.createElement('div');
-  promptHeader.className = 'prompt-header';
-
-  const backBtn = document.createElement('button');
-  backBtn.className = 'back-btn';
-  backBtn.id = 'backPromptBtn';
-  const backIcon = document.createElement('i');
-  backIcon.className = 'fas fa-arrow-left';
-  backBtn.appendChild(backIcon);
-
-  const promptTitle = document.createElement('h2');
-  promptTitle.textContent = 'Customize Prompt';
-
-  promptHeader.appendChild(backBtn);
-  promptHeader.appendChild(promptTitle);
-
-  const promptContent = document.createElement('div');
-  promptContent.className = 'prompt-content';
-
-  const promptTextarea = document.createElement('textarea');
-  promptTextarea.className = 'prompt-textarea';
-  promptTextarea.id = 'promptTextarea';
-  promptTextarea.placeholder = 'Write a prompt...';
-  promptTextarea.value = 'Analyze this image and provide a detailed description focusing on the main subjects, colors, composition, and any notable details or patterns.'; 
-
-  const saveBtn = document.createElement('button');
-  saveBtn.className = 'save-btn';
-  saveBtn.id = 'savePromptBtn';
-  const saveIcon = document.createElement('i');
-  saveIcon.className = 'fas fa-save';
-  saveBtn.appendChild(saveIcon);
-  saveBtn.appendChild(document.createTextNode(' Save Prompt'));
-
-  promptContent.appendChild(promptTextarea);
-  promptContent.appendChild(saveBtn);
-
-  promptView.appendChild(promptHeader);
-  promptView.appendChild(promptContent);
-
-  page.appendChild(userInfo);
-  page.appendChild(buttonGroup);
-  page.appendChild(promptView); 
-
+  // Attach event listeners for opening sub-views
   promptBtn.addEventListener('click', () => {
     promptView.classList.add('active');
-    page.classList.add('subview-active'); 
+    page.classList.add('subview-active');
   });
 
-  backBtn.addEventListener('click', () => {
-    promptView.classList.remove('active');
-    page.classList.remove('subview-active'); 
+  premiumBtn.addEventListener('click', () => {
+    premiumView.classList.add('active');
+    page.classList.add('subview-active');
   });
 
-  saveBtn.addEventListener('click', () => {
-      promptView.classList.remove('active');
-      page.classList.remove('subview-active');
-      showFeedbackMessage('Prompt saved', 'done');
-  });
+  // Append everything to page
+  page.appendChild(userInfo);
+  page.appendChild(buttonGroup);
+  page.appendChild(promptView);
+  page.appendChild(premiumView);
 
   return page;
 }

@@ -118,14 +118,20 @@ function initializeSettingsPanel() {
     }
   });
 
-  document.addEventListener("click", (e) => {
+  document.addEventListener('click', (e) => {
     if (!panel.contains(e.target) && !settingsBtn.contains(e.target)) {
-      panel.classList.remove("active");
-      const promptView = document.getElementById("promptView");
+      panel.classList.remove('active');
+      const promptView = document.getElementById('promptView');
       if (promptView) {
-        promptView.classList.remove("active");
-        const settingsPage = document.querySelector(".settings-page");
-        if (settingsPage) settingsPage.classList.remove("subview-active"); // Reset main content visibility
+        promptView.classList.remove('active');
+        const settingsPage = document.querySelector('.settings-page');
+        if (settingsPage) settingsPage.classList.remove('subview-active');
+      }
+      const premiumView = document.getElementById('premiumView'); // Add this
+      if (premiumView) {
+        premiumView.classList.remove('active');
+        const settingsPage = document.querySelector('.settings-page');
+        if (settingsPage) settingsPage.classList.remove('subview-active');
       }
     }
   });
