@@ -1,4 +1,3 @@
-
 let isActivated = false;
 
 function onAppStart() {

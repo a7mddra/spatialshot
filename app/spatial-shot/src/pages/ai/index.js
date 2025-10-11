@@ -1,4 +1,4 @@
-import { WebviewBuilder } from '../../shared/webview-builder.js';
+import { WebviewBuilder } from '../../shared/webview/builder.js';
 import { setupAIEvents } from './events.js';
 
 /**

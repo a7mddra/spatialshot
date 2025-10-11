@@ -6,8 +6,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#1e1e1e" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="./style.css" />
-  <link rel="stylesheet" href="./settings.css" />
+  <link rel="stylesheet" href="./style/main.css" />
+  <link rel="stylesheet" href="./style/top-bar.css" />
+  <link rel="stylesheet" href="./style/content.css" />
+  <link rel="stylesheet" href="../pages/welcome/style.css" />
+  <link rel="stylesheet" href="../pages/settings/style.css" />
+  <link rel="stylesheet" href="../shared/webview/style.css" />
   <title>AI Widget</title>
 </head>
 <body>
@@ -81,7 +85,7 @@
           <img src="../../assets/raw.svg" alt="Spatial Shot Logo" class="logo-image">
         </div>
         
-        <h1 class="welcome-title">Let’s get you started</h1>
+        <h1 class="welcome-title">Let's get you started</h1>
         <p class="welcome-subtitle">Draw anywhere. Get instant insight.</p>
         
         <button id="login-btn">
@@ -96,6 +100,16 @@
       </div>
     </div>
     </div>
+  </div>
+
+  <!-- Panel overlay -->
+  <div class="panel-overlay" id="panelOverlay"></div>
+
+  <!-- Settings panel -->
+  <div class="panel" id="panel">
+      <div class="panel-content">
+          <p>Panel content will go here</p>
+      </div>
   </div>
 
   <script type="module" src="./app.js"></script>

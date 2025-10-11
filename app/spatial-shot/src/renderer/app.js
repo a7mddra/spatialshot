@@ -4,7 +4,6 @@ const pageMap = {
   ai:       '../pages/ai/index.js',
   lens:     '../pages/lens/index.js',
   account:  '../pages/usr/index.js',
-  settings: '../pages/settings/index.js'
 };
 
 let currentImagePath = null;
@@ -69,6 +68,47 @@ async function renderCategory(category) {
   }
 }
 
+function initializeSidePanel() {
+    const panel = document.getElementById('panel');
+    const panelOverlay = document.getElementById('panelOverlay');
+    const closeBtn = document.getElementById('closeBtn');
+    const welcomeScreen = document.getElementById('welcome-screen');
+
+    const settingsBtn = document.querySelector('.cat-btn[data-category="settings"]');
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (welcomeScreen.style.display !== 'none') return;
+
+            panel.classList.toggle('active');
+            panelOverlay.classList.toggle('active');
+        });
+    }
+    
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            panel.classList.remove('active');
+            panelOverlay.classList.remove('active');
+        });
+    }
+    
+    if (panelOverlay) {
+        panelOverlay.addEventListener('click', () => {
+            panel.classList.remove('active');
+            panelOverlay.classList.remove('active');
+        });
+    }
+    
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && panel.classList.contains('active')) {
+            panel.classList.remove('active');
+            panelOverlay.classList.remove('active');
+        }
+    });
+}
+
 function updateUserAvatar(photoURL) {
   const accountBtn = document.querySelector('.cat-btn[data-category="account"]');
   if (accountBtn) {
@@ -131,7 +171,7 @@ async function initializeApp() {
   document.querySelectorAll('.cat-btn').forEach(btn => {
     const category = btn.dataset.category;
     btn.addEventListener('click', async () => {
-      if (!category) return;
+      if (!category || category === 'settings') return;
 
       if (welcome.onTabClick(category)) {
         const now = Date.now();
@@ -197,27 +237,27 @@ async function initializeApp() {
   const userData = await electronAPI.getUserData();
   if (userData) {
     updateUserAvatar(userData.photoURL);
-    welcome.onActivate(activateAiTab, true); // Bypass welcome screen
+    welcome.onActivate(activateAiTab, true); 
 
-    // Fire-and-forget verification. Don't await it.
+    
     electronAPI.verifyUserStatus(userData.email)
       .then(verificationResult => {
         if (!verificationResult) return;
 
         if (verificationResult.status === 'VALID') {
-          // Silently update local profile with fresh data from DB
+          
           electronAPI.saveUserData(verificationResult.user);
           if (verificationResult.user.photoURL !== userData.photoURL) {
             updateUserAvatar(verificationResult.user.photoURL);
           }
         } else if (verificationResult.status === 'NOT_FOUND') {
-          // User deleted from DB, log them out
+          
           electronAPI.logout();
           window.location.reload();
         }
       })
       .catch(error => {
-        // This is the 'no internet' case. Do nothing.
+        
         console.warn('Could not verify user status (likely offline): ', error.message);
       });
 
@@ -243,6 +283,8 @@ async function initializeApp() {
       window.handleEscape();
     }
   });
+
+  initializeSidePanel();
 }
 
 document.addEventListener('DOMContentLoaded', initializeApp);

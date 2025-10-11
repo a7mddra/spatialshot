@@ -1,4 +1,4 @@
-import { sendPasteKeyEvents } from '../../shared/webview-uploader.js';
+import { sendPasteKeyEvents } from '../../shared/webview/uploader.js';
 import { injectAIPrompt } from './prompt-injector.js';
 
 /**

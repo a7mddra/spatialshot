@@ -1,0 +1,676 @@
+#welcome-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Content container */
+.welcome-content {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    padding: 40px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    animation: slideUp 0.8s ease-out;
+    /* Gradient background for the card */
+    background: linear-gradient(135deg, rgb(135, 77, 202) 0%, rgb(13, 130, 209) 100%);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite, slideUp 0.8s ease-out;
+    overflow: hidden;
+}
+
+@keyframes gradientShift {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Floating orbs - now inside the card */
+.orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(40px);
+    opacity: 0.4;
+    animation: float 20s infinite ease-in-out;
+}
+
+.orb1 {
+    width: 150px;
+    height: 150px;
+    background: radial-gradient(circle, rgb(135, 77, 202), transparent);
+    top: -75px;
+    left: -75px;
+    animation-duration: 25s;
+}
+
+.orb2 {
+    width: 120px;
+    height: 120px;
+    background: radial-gradient(circle, rgb(13, 130, 209), transparent);
+    bottom: -60px;
+    right: -60px;
+    animation-duration: 30s;
+    animation-delay: -5s;
+}
+
+.orb3 {
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.8), transparent);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation-duration: 35s;
+    animation-delay: -10s;
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translate(0, 0) scale(1);
+    }
+
+    33% {
+        transform: translate(30px, -30px) scale(1.1);
+    }
+
+    66% {
+        transform: translate(-20px, 20px) scale(0.9);
+    }
+}
+
+/* Logo container */
+.logo-container {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 24px;
+    position: relative;
+    animation: logoPulse 3s ease-in-out infinite;
+    z-index: 20;
+}
+
+@keyframes logoPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.logo-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
+}
+
+/* Typography */
+.welcome-title {
+    font-size: 28px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.9) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+    animation: titleFade 1s ease-out 0.3s both;
+    z-index: 20;
+    position: relative;
+}
+
+@keyframes titleFade {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.welcome-subtitle {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 16px;
+    margin-bottom: 32px;
+    line-height: 1.5;
+    animation: titleFade 1s ease-out 0.5s both;
+    z-index: 20;
+    position: relative;
+}
+
+/* Google Login Button */
+#login-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 14px 28px;
+    background: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a1a1a;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+    animation: buttonFade 1s ease-out 0.7s both;
+    position: relative;
+    overflow: hidden;
+    margin: 0 auto;
+    z-index: 20;
+}
+
+@keyframes buttonFade {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#login-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s;
+}
+
+#login-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.3);
+}
+
+#login-btn:hover::before {
+    left: 100%;
+}
+
+#login-btn:active {
+    transform: translateY(0);
+}
+
+/* Google Logo SVG */
+.google-logo {
+    width: 20px;
+    height: 20px;
+}
+
+/* Meteor-like particle animations */
+.particle {
+    position: absolute;
+    width: 2.6px;
+    height: 2.6px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 50%;
+    animation: meteorFlow linear infinite;
+    z-index: 5;
+}
+
+/* Different paths and speeds for particles */
+.particle:nth-child(1) {
+    animation-duration: 2.5s;
+    animation-delay: 0s;
+}
+
+.particle:nth-child(2) {
+    animation-duration: 3s;
+    animation-delay: 0.5s;
+}
+
+.particle:nth-child(3) {
+    animation-duration: 2.8s;
+    animation-delay: 1s;
+}
+
+.particle:nth-child(4) {
+    animation-duration: 2.2s;
+    animation-delay: 1.5s;
+}
+
+.particle:nth-child(5) {
+    animation-duration: 3.2s;
+    animation-delay: 2s;
+}
+
+.particle:nth-child(6) {
+    animation-duration: 2.6s;
+    animation-delay: 2.5s;
+}
+
+.particle:nth-child(7) {
+    animation-duration: 2s;
+    animation-delay: 3s;
+}
+
+.particle:nth-child(8) {
+    animation-duration: 2.9s;
+    animation-delay: 3.5s;
+}
+
+.particle:nth-child(9) {
+    animation-duration: 2.4s;
+    animation-delay: 4s;
+}
+
+.particle:nth-child(10) {
+    animation-duration: 3.5s;
+    animation-delay: 4.5s;
+}
+
+.particle:nth-child(11) {
+    animation-duration: 2.7s;
+    animation-delay: 0.3s;
+}
+
+.particle:nth-child(12) {
+    animation-duration: 2.3s;
+    animation-delay: 0.8s;
+}
+
+.particle:nth-child(13) {
+    animation-duration: 3.1s;
+    animation-delay: 1.3s;
+}
+
+.particle:nth-child(14) {
+    animation-duration: 2.1s;
+    animation-delay: 1.8s;
+}
+
+.particle:nth-child(15) {
+    animation-duration: 2.9s;
+    animation-delay: 2.3s;
+}
+
+.particle:nth-child(16) {
+    animation-duration: 2.5s;
+    animation-delay: 2.8s;
+}
+
+.particle:nth-child(17) {
+    animation-duration: 3.3s;
+    animation-delay: 3.3s;
+}
+
+.particle:nth-child(18) {
+    animation-duration: 2.2s;
+    animation-delay: 3.8s;
+}
+
+.particle:nth-child(19) {
+    animation-duration: 2.8s;
+    animation-delay: 4.3s;
+}
+
+.particle:nth-child(20) {
+    animation-duration: 3s;
+    animation-delay: 4.8s;
+}
+
+.particle:nth-child(21) {
+    animation-duration: 2.6s;
+    animation-delay: 0.2s;
+}
+
+.particle:nth-child(22) {
+    animation-duration: 2.4s;
+    animation-delay: 0.7s;
+}
+
+.particle:nth-child(23) {
+    animation-duration: 3.2s;
+    animation-delay: 1.2s;
+}
+
+.particle:nth-child(24) {
+    animation-duration: 2.1s;
+    animation-delay: 1.7s;
+}
+
+.particle:nth-child(25) {
+    animation-duration: 2.8s;
+    animation-delay: 2.2s;
+}
+
+.particle:nth-child(26) {
+    animation-duration: 3.1s;
+    animation-delay: 2.7s;
+}
+
+.particle:nth-child(27) {
+    animation-duration: 2.3s;
+    animation-delay: 3.2s;
+}
+
+.particle:nth-child(28) {
+    animation-duration: 2.7s;
+    animation-delay: 3.7s;
+}
+
+.particle:nth-child(29) {
+    animation-duration: 2.9s;
+    animation-delay: 4.2s;
+}
+
+.particle:nth-child(30) {
+    animation-duration: 2.5s;
+    animation-delay: 4.7s;
+}
+
+.particle:nth-child(31) {
+    animation-duration: 3.3s;
+    animation-delay: 0.4s;
+}
+
+.particle:nth-child(32) {
+    animation-duration: 2.2s;
+    animation-delay: 0.9s;
+}
+
+.particle:nth-child(33) {
+    animation-duration: 2.6s;
+    animation-delay: 1.4s;
+}
+
+.particle:nth-child(34) {
+    animation-duration: 3s;
+    animation-delay: 1.9s;
+}
+
+.particle:nth-child(35) {
+    animation-duration: 2.4s;
+    animation-delay: 2.4s;
+}
+
+.particle:nth-child(36) {
+    animation-duration: 2.8s;
+    animation-delay: 2.9s;
+}
+
+.particle:nth-child(37) {
+    animation-duration: 3.1s;
+    animation-delay: 3.4s;
+}
+
+.particle:nth-child(38) {
+    animation-duration: 2.3s;
+    animation-delay: 3.9s;
+}
+
+.particle:nth-child(39) {
+    animation-duration: 2.7s;
+    animation-delay: 4.4s;
+}
+
+.particle:nth-child(40) {
+    animation-duration: 2.9s;
+    animation-delay: 4.9s;
+}
+
+@keyframes meteorFlow {
+    0% {
+        transform: translateX(-150px) translateY(150px);
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 1;
+    }
+
+    90% {
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: translateX(600px) translateY(-600px);
+        opacity: 0;
+    }
+}
+
+/* Different starting positions for variety */
+.particle:nth-child(1) {
+    bottom: -50px;
+    left: -30px;
+}
+
+.particle:nth-child(2) {
+    bottom: -20px;
+    left: 10%;
+}
+
+.particle:nth-child(3) {
+    bottom: 5%;
+    left: -40px;
+}
+
+.particle:nth-child(4) {
+    bottom: -30px;
+    left: 20%;
+}
+
+.particle:nth-child(5) {
+    bottom: 10%;
+    left: -20px;
+}
+
+.particle:nth-child(6) {
+    bottom: -40px;
+    left: 15%;
+}
+
+.particle:nth-child(7) {
+    bottom: 15%;
+    left: -50px;
+}
+
+.particle:nth-child(8) {
+    bottom: -10px;
+    left: 5%;
+}
+
+.particle:nth-child(9) {
+    bottom: 20%;
+    left: -25px;
+}
+
+.particle:nth-child(10) {
+    bottom: -35px;
+    left: 25%;
+}
+
+.particle:nth-child(11) {
+    bottom: -45px;
+    left: 8%;
+}
+
+.particle:nth-child(12) {
+    bottom: 3%;
+    left: -35px;
+}
+
+.particle:nth-child(13) {
+    bottom: -15px;
+    left: 18%;
+}
+
+.particle:nth-child(14) {
+    bottom: 12%;
+    left: -45px;
+}
+
+.particle:nth-child(15) {
+    bottom: -25px;
+    left: 12%;
+}
+
+.particle:nth-child(16) {
+    bottom: 8%;
+    left: -15px;
+}
+
+.particle:nth-child(17) {
+    bottom: -55px;
+    left: 22%;
+}
+
+.particle:nth-child(18) {
+    bottom: 18%;
+    left: -28px;
+}
+
+.particle:nth-child(19) {
+    bottom: -5px;
+    left: 16%;
+}
+
+.particle:nth-child(20) {
+    bottom: 13%;
+    left: -38px;
+}
+
+.particle:nth-child(21) {
+    bottom: -48px;
+    left: 6%;
+}
+
+.particle:nth-child(22) {
+    bottom: 2%;
+    left: -42px;
+}
+
+.particle:nth-child(23) {
+    bottom: -22px;
+    left: 14%;
+}
+
+.particle:nth-child(24) {
+    bottom: 16%;
+    left: -32px;
+}
+
+.particle:nth-child(25) {
+    bottom: -38px;
+    left: 11%;
+}
+
+.particle:nth-child(26) {
+    bottom: 6%;
+    left: -26px;
+}
+
+.particle:nth-child(27) {
+    bottom: -12px;
+    left: 19%;
+}
+
+.particle:nth-child(28) {
+    bottom: 14%;
+    left: -48px;
+}
+
+.particle:nth-child(29) {
+    bottom: -28px;
+    left: 9%;
+}
+
+.particle:nth-child(30) {
+    bottom: 11%;
+    left: -22px;
+}
+
+.particle:nth-child(31) {
+    bottom: -52px;
+    left: 17%;
+}
+
+.particle:nth-child(32) {
+    bottom: 4%;
+    left: -36px;
+}
+
+.particle:nth-child(33) {
+    bottom: -18px;
+    left: 13%;
+}
+
+.particle:nth-child(34) {
+    bottom: 9%;
+    left: -44px;
+}
+
+.particle:nth-child(35) {
+    bottom: -42px;
+    left: 7%;
+}
+
+.particle:nth-child(36) {
+    bottom: 17%;
+    left: -18px;
+}
+
+.particle:nth-child(37) {
+    bottom: -8px;
+    left: 21%;
+}
+
+.particle:nth-child(38) {
+    bottom: 19%;
+    left: -52px;
+}
+
+.particle:nth-child(39) {
+    bottom: -32px;
+    left: 4%;
+}
+
+.particle:nth-child(40) {
+    bottom: 7%;
+    left: -29px;
+}

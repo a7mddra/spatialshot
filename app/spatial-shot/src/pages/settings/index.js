@@ -1,4 +1,3 @@
-// ui/pages/settings.js
 export function createPage() {
   const page = document.createElement('div');
   page.className = 'page-center';

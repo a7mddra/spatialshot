@@ -1,5 +1,5 @@
-import { WebviewBuilder } from '../../shared/webview-builder.js';
-import { LENS_AUTOMATION_SCRIPT, sendPasteKeyEvents } from '../../shared/webview-uploader.js';
+import { WebviewBuilder } from '../../shared/webview/builder.js';
+import { LENS_AUTOMATION_SCRIPT, sendPasteKeyEvents } from '../../shared/webview/uploader.js';
 import { CaptchaDetector } from '../../shared/captcha-detector.js';
 
 export function createPage() {
