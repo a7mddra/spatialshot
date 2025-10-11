@@ -1,22 +1,32 @@
 export function createPage() {
   const page = document.createElement('div');
+  const electronAPI = window.electronAPI;
 
   // User Info
   const userInfo = document.createElement('div');
   userInfo.className = 'user-info';
-  const avatar = document.createElement('div');
+  const avatar = document.createElement('img');
   avatar.className = 'avatar';
-  avatar.textContent = 'JD';
   const userDetails = document.createElement('div');
   userDetails.className = 'user-details';
   const userName = document.createElement('h3');
-  userName.textContent = 'John Doe';
-  const userPlan = document.createElement('p');
-  userPlan.textContent = 'Free Plan';
+  const userEmail = document.createElement('p');
   userDetails.appendChild(userName);
-  userDetails.appendChild(userPlan);
+  userDetails.appendChild(userEmail);
   userInfo.appendChild(avatar);
   userInfo.appendChild(userDetails);
+
+  (async () => {
+    const userData = await electronAPI.getUserData();
+    if (userData) {
+      avatar.src = userData.photoURL;
+      userName.textContent = userData.name;
+      userEmail.textContent = userData.email;
+    } else {
+      userName.textContent = 'Guest';
+      userEmail.textContent = 'Not logged in';
+    }
+  })();
 
   // Settings Category
   const settingsCategory = document.createElement('div');

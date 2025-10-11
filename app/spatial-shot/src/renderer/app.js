@@ -4,7 +4,6 @@ import { createPage as createSettingsPage } from '../pages/settings/index.js';
 const pageMap = {
   ai:       '../pages/ai/index.js',
   lens:     '../pages/lens/index.js',
-  account:  '../pages/usr/index.js',
 };
 
 let currentImagePath = null;
@@ -153,21 +152,7 @@ function initializeSidePanel() {
     }
 }
 
-function updateUserAvatar(photoURL) {
-  const accountBtn = document.querySelector('.cat-btn[data-category="account"]');
-  if (accountBtn) {
-    const normalImg = accountBtn.querySelector('img.icon-normal');
-    const activeImg = accountBtn.querySelector('img.icon-active');
-    if (normalImg) {
-      normalImg.src = photoURL;
-      normalImg.style.borderRadius = '50%';
-    }
-    if (activeImg) {
-      activeImg.src = photoURL;
-      activeImg.style.borderRadius = '50%';
-    }
-  }
-}
+
 
 async function preLoadCategory(category) {
   const container = document.getElementById('content-container');
@@ -233,9 +218,6 @@ async function initializeApp() {
                   webview._safeReload();
                 }
                 break;
-              case 'account':
-                console.log('Refresh MongoDB (TODO)');
-                break;
               case 'settings':
                 break;
             }
@@ -271,7 +253,6 @@ async function initializeApp() {
 
   electronAPI.onAuthResult(async (result) => {
     if (result.success && result.user) {
-      updateUserAvatar(result.user.photoURL);
       welcome.onActivate(activateAiTab);
     } else {
       console.error('Authentication failed:', result.error);
@@ -280,7 +261,6 @@ async function initializeApp() {
 
   const userData = await electronAPI.getUserData();
   if (userData) {
-    updateUserAvatar(userData.photoURL);
     welcome.onActivate(activateAiTab, true); 
 
     
@@ -291,9 +271,7 @@ async function initializeApp() {
         if (verificationResult.status === 'VALID') {
           
           electronAPI.saveUserData(verificationResult.user);
-          if (verificationResult.user.photoURL !== userData.photoURL) {
-            updateUserAvatar(verificationResult.user.photoURL);
-          }
+          
         } else if (verificationResult.status === 'NOT_FOUND') {
           
           electronAPI.logout();
