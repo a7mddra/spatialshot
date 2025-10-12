@@ -49,7 +49,7 @@ export function createPromptView(page, electronAPI, showFeedbackMessage) {
   });
 
   saveBtn.addEventListener('click', () => {
-    electronAPI.saveCustomPrompt(promptText);
+    //electronAPI.saveCustomPrompt(promptText);
     showFeedbackMessage('Prompt saved', 'done');
     promptView.classList.remove('active');
     page.classList.remove('subview-active');

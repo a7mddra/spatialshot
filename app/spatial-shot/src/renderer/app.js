@@ -72,8 +72,23 @@ async function renderCategory(category) {
   }
 }
 
+function toggleSettingsPanel() {
+  const panel = document.getElementById("panel");
+  const panelOverlay = document.getElementById("panel-overlay");
+  panel.classList.toggle("active");
+  panelOverlay.classList.toggle("active");
+}
+
+function closeSettingsPanel() {
+  const panel = document.getElementById("panel");
+  const panelOverlay = document.getElementById("panel-overlay");
+  panel.classList.remove("active");
+  panelOverlay.classList.remove("active");
+}
+
 function initializeSettingsPanel() {
   const panel = document.getElementById("panel");
+  const panelOverlay = document.getElementById("panel-overlay");
   const welcomeScreen = document.getElementById("welcome-screen");
   const settingsContent = document.getElementById("settings-content");
 
@@ -90,7 +105,7 @@ function initializeSettingsPanel() {
 
       if (welcomeScreen.style.display !== "none") return;
 
-      panel.classList.toggle("active");
+      toggleSettingsPanel();
     });
   }
 
@@ -98,7 +113,7 @@ function initializeSettingsPanel() {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && panel.classList.contains('active')) {
       if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
-        panel.classList.remove('active');
+        closeSettingsPanel();
       }
     }
   });
@@ -112,10 +127,8 @@ function initializeSettingsPanel() {
     }
   });
 
-  document.addEventListener("click", (e) => {
-    if (!panel.contains(e.target) && !settingsBtn.contains(e.target)) {
-      panel.classList.remove("active");
-    }
+  panelOverlay.addEventListener("click", () => {
+    closeSettingsPanel();
   });
 
   document.addEventListener('click', (e) => {

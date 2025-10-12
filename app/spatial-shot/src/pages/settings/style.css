@@ -683,3 +683,18 @@ input:checked+.toggle-slider:before {
 .plan-btn:hover::before {
   left: 100%;
 }
+
+#panel-overlay {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  width: 100%;
+  height: calc(100% - 60px);
+  background-color: rgba(0, 0, 0, 0);
+  z-index: 999;
+  display: none;
+}
+
+#panel-overlay.active {
+  display: block;
+}
