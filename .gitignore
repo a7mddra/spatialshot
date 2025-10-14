@@ -1,8 +1,6 @@
-doc/TODO
-app/dist
-app/output
-app/node_modules
-app/package-lock.json
-app/spatial-shot/node_modules
-app/spatial-shot/package-lock.json
-app/spatial-shot/src/config.private.json
+docs/TODO
+packages/capture/node_modules
+packages/capture/package-lock.json
+packages/panel/node_modules
+packages/panel/config.private.json
+packages/panel/package-lock.json

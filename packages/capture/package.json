@@ -1,9 +1,9 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "name": "draw-on-screen",
+  "name": "spatialshot",
   "version": "1.0.0",
   "description": "Take screenshots by drawing free shapes on the screen.",
-  "main": "src/main.js",
+  "main": "main.js",
   "author": "a7md <a7mddra@gmail.com>",
   "license": "MIT",
   "scripts": {
