@@ -1,9 +1,0 @@
-# TODO List
-
-- [ ] Implement the core web application logic.
-- [ ] Implement the functionality to save prompts and integrate it with the web application logic.
-- [ ] Implement payment methods for premium subscription plans.
-- [ ] Add user subscription plan information to the MongoDB database and update the premium page accordingly.
-- [ ] Track user's "shots" and "prompts per shot" and implement an overlay to restrict app usage when limits are exceeded.
-- [ ] Implement a daily quota for free users and a monthly quota for starter-tier users.
-- [ ] Create a stylesheet for light mode and implement a dark mode toggle button.
