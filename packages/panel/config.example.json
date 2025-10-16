@@ -1,6 +1,6 @@
 {
   "__comment_block": {
-    "@file": "config.tmpl.json",
+    "@file": "config.example.json",
     "@brief": "Configuration template for application secrets and environment-specific variables.",
     "@details": [
       "This file serves as a template for the application's private configuration.",

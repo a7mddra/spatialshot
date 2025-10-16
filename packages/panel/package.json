@@ -3,7 +3,7 @@
   "name": "spatialshot",
   "version": "1.0.0",
   "description": "AI and contextual analysis module for screenshot data.",
-  "main": "src/main.js",
+  "main": "main.js",
   "type": "commonjs",
   "author": "a7md <a7mddra@gmail.com>",
   "license": "MIT",
