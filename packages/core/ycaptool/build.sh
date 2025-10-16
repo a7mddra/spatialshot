@@ -70,7 +70,7 @@ EOF
 # Clean
 do_clean() {
     echo -e "${YELLOW}Cleaning build directories...${NC}"
-    rm -rf "$BUILD_DIR_GUI" "$BUILD_DIR_CLI" "$YCAPTOOL_DIR/build" "$YCAPTOOL_DIR/dist" "$YCAPTOOL_DIR/__pycache__" "$YCAPTOOL_DIR/ycap-cli.spec"
+    rm -rf "$BUILD_DIR_GUI" "$BUILD_DIR_CLI" "$YCAPTOOL_DIR/dist" "$YCAPTOOL_DIR/__pycache__" "$YCAPTOOL_DIR/ycap-cli.spec"
     if [ -d "$BIN_DIR" ]; then
         rm -rf "$BIN_DIR"
     fi

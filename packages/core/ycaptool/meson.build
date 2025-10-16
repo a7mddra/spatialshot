@@ -24,7 +24,7 @@ gen_resources = custom_target(
 )
 
 executable('ycaptool',
-  ['main.cpp', gen_resources], 
+  ['src/main.cpp', 'src/display_window.cpp', 'src/multi_display_selector.cpp', 'src/ycap_cli_runner.cpp', gen_resources], 
   dependencies : [ gtkmm, glib, gio ],
   install : false
 )
