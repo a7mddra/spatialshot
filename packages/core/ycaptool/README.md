@@ -21,7 +21,7 @@ The tool is composed of two main parts:
 To build both the CLI and GUI components, run the `build.sh` script:
 
 ```bash
-./build.sh
+./build.sh # --help
 ```
 
 This will produce the `ycaptool` and `ycap-cli` binaries in the `bin` directory.
