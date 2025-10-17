@@ -44,7 +44,7 @@ class Capture:
         if display_num <= 0:
             return False, "invalid display number"
 
-        save_path = Path(os.environ.get("SC_SAVE_PATH", Path.home()/"config"/"spatialshot"/"tmp"))
+        save_path = Path(os.environ.get("SC_SAVE_PATH", Path.home()/".config"/"spatialshot"/"tmp"))
         save_path.mkdir(parents=True, exist_ok=True)
         image_fmt = "png"
         output_file = save_path / f"{display_num}.{image_fmt}"
