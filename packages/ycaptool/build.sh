@@ -46,8 +46,7 @@ stop_spinner() {
 # Paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 YCAPTOOL_DIR="$SCRIPT_DIR"
-CORE_DIR="$(dirname "$YCAPTOOL_DIR")"
-PKGS_DIR="$(dirname "$CORE_DIR")"
+PKGS_DIR="$(dirname "$YCAPTOOL_DIR")"
 PROJECT_ROOT="$(dirname "$PKGS_DIR")"
 
 BIN_DIR="$YCAPTOOL_DIR/bin"
