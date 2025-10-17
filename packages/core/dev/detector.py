@@ -1,38 +1,50 @@
 #!/usr/bin/env python3
+"""Environment and display enumeration utilities for SpatialShot."""
+
+from __future__ import annotations
+
 import os
 import platform
 import subprocess
 import glob
 import ctypes
+import logging
 from ctypes import byref, c_uint32
+from typing import Optional
 
-def detect_environment() -> str:
-    """Return one of: 'wayland', 'x11', 'win32', 'darwin', 'unknown'."""
-    system = platform.system().lower()
-    if system == "windows":
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger("spatialshot.detector")
+
+
+def identify_display_environment() -> str:
+    system_name = platform.system().lower()
+    if system_name == "windows":
         return "win32"
-    if system == "darwin":
+    if system_name == "darwin":
         return "darwin"
-    if system == "linux":
+    if system_name == "linux":
         xdg = os.environ.get("XDG_SESSION_TYPE", "").lower()
-        wayland_env = bool(os.environ.get("WAYLAND_DISPLAY"))
-        display_env = bool(os.environ.get("DISPLAY"))
-        if wayland_env or xdg == "wayland":
+        if os.environ.get("WAYLAND_DISPLAY") or xdg == "wayland":
             return "wayland"
-        if display_env or xdg == "x11":
+        if os.environ.get("DISPLAY") or xdg == "x11":
             return "x11"
         return "unknown"
     return "unknown"
 
-# ----------------- Linux helpers -----------------
-def _try_gdk_count():
+
+def _probe_gdk() -> Optional[int]:
     try:
-        import gi
+        import gi  # type: ignore
         try:
             gi.require_version("Gtk", "3.0")
+            gi.require_version("Gdk", "3.0")
         except Exception:
             pass
-        from gi.repository import Gdk, Gtk
+        from gi.repository import Gdk, Gtk  # type: ignore
 
         try:
             if hasattr(Gtk, "init_check"):
@@ -60,16 +72,14 @@ def _try_gdk_count():
                     return int(n)
         except Exception:
             pass
-
     except Exception:
         return None
     return None
 
 
-def _try_xrandr_count():
+def _probe_xrandr() -> Optional[int]:
     try:
-        out = subprocess.check_output(
-            ["xrandr", "--listmonitors"], stderr=subprocess.DEVNULL, text=True)
+        out = subprocess.check_output(["xrandr", "--listmonitors"], stderr=subprocess.DEVNULL, text=True)
         first = out.splitlines()[0].strip()
         if first.lower().startswith("monitors:"):
             parts = first.split()
@@ -80,16 +90,15 @@ def _try_xrandr_count():
     return None
 
 
-def _try_drm_sysfs_count():
+def _probe_drm_sysfs() -> Optional[int]:
     try:
         paths = glob.glob("/sys/class/drm/*/status")
         count = 0
         for p in paths:
             try:
-                with open(p, "r") as f:
-                    status = f.read().strip()
-                if status == "connected":
-                    count += 1
+                with open(p, "r") as fh:
+                    if fh.read().strip() == "connected":
+                        count += 1
             except Exception:
                 continue
         if count > 0:
@@ -99,8 +108,7 @@ def _try_drm_sysfs_count():
     return None
 
 
-# ----------------- Windows helper -----------------
-def _try_windows_count():
+def _probe_windows() -> Optional[int]:
     try:
         user32 = ctypes.windll.user32
         n = user32.GetSystemMetrics(80)
@@ -111,14 +119,12 @@ def _try_windows_count():
     return None
 
 
-# ----------------- macOS helper -----------------
-def _try_macos_count():
+def _probe_macos() -> Optional[int]:
     try:
-        from AppKit import NSScreen # type: ignore  # noqa
+        from AppKit import NSScreen  # type: ignore
         return len(NSScreen.screens())
     except Exception:
         pass
-
     try:
         cg = ctypes.CDLL("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics")
         max_displays = 32
@@ -129,54 +135,38 @@ def _try_macos_count():
             return int(display_count.value)
     except Exception:
         pass
-
     return None
 
 
-# ----------------- Public API -----------------
-def get_monitor_count() -> int:
-    """
-    Best-effort monitor count across platforms.
-    Always returns an integer >= 1.
-    """
-    system = platform.system().lower()
+def probe_monitor_count() -> int:
+    system_name = platform.system().lower()
 
-    # Windows
-    if system == "windows":
-        n = _try_windows_count()
+    if system_name == "windows":
+        n = _probe_windows()
         return n if n is not None and n >= 1 else 1
 
-    # macOS
-    if system == "darwin":
-        n = _try_macos_count()
+    if system_name == "darwin":
+        n = _probe_macos()
         return n if n is not None and n >= 1 else 1
 
-    # Linux / other Unix
-    n = _try_gdk_count()
+    n = _probe_gdk()
     if n and n >= 1:
         return n
 
-    # Try xrandr (X11)
-    n = _try_xrandr_count()
+    n = _probe_xrandr()
     if n and n >= 1:
         return n
 
-    # Try kernel DRM sysfs
-    n = _try_drm_sysfs_count()
+    n = _probe_drm_sysfs()
     if n and n >= 1:
         return n
 
     return 1
 
 
-def is_multi_monitor() -> bool:
-    return get_monitor_count() > 1
-
-
-# ----------------- CLI usage -----------------
 if __name__ == "__main__":
-    env = detect_environment()
-    count = get_monitor_count()
-    print(f"environment: {env}")
-    print(f"monitor count: {count}")
-    print(f"is multi-monitor: {is_multi_monitor()}")
+    env = identify_display_environment()
+    count = probe_monitor_count()
+    logger.info("environment: %s", env)
+    logger.info("monitor count: %d", count)
+    logger.info("multi-monitor: %s", "yes" if count > 1 else "no")

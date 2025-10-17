@@ -26,8 +26,15 @@ $nircmdPath = Join-Path $scriptDir "..\..\third-party\nircmd\exe\nircmd.exe"
 $outputFolder = "$env:APPDATA\spatialshot\tmp"
 # ---------------------
 
-Add-Type -AssemblyName System.Windows.Forms
+if (-not (Test-Path -Path $outputFolder)) {
+    New-Item -ItemType Directory -Path $outputFolder | Out-Null
+}
 
+Get-ChildItem -Path $outputFolder -File -Force -ErrorAction SilentlyContinue |
+    Where-Object { $_.Extension -ieq ".png" -or $_.Name -eq "CAPTURE_DONE" } |
+    Remove-Item -Force -ErrorAction SilentlyContinue
+
+Add-Type -AssemblyName System.Windows.Forms
 
 $i = 1
 foreach ($screen in [System.Windows.Forms.Screen]::AllScreens) {

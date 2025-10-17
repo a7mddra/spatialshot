@@ -10,7 +10,6 @@ if ! command -v scrot &> /dev/null; then
     exit 1
 fi
 
-# Get number of screens using xrandr
 num_screens=$(xrandr --listmonitors | head -n 1 | awk '{print $2}')
 
 if [ "$num_screens" -eq 0 ]; then
@@ -30,4 +29,3 @@ while [ $counter -lt $num_screens ]; do
 
     counter=$((counter + 1))
 done
-
