@@ -1,7 +1,11 @@
 import shutil
+import logging
 from typing import Optional
 
 from utils import run_cmd
+
+logger = logging.getLogger("ycaptool.cli.audio")
+
 
 class AudioManager:
     def __init__(self):
@@ -12,25 +16,27 @@ class AudioManager:
     def mute_audio(self):
         if shutil.which("pactl"):
             self.audio_backend = "pactl"
-            _, out = run_cmd(["pactl", "get-sink-mute", "@DEFAULT_SINK@"])
+            _, out = run_cmd(["pactl", "get-sink-mute", "@DEFAULT_SINK@"], capture=True)
             self.prev_mute = out.split()[-1] if out else "unknown"
             if self.prev_mute != "yes":
                 run_cmd(["pactl", "set-sink-mute", "@DEFAULT_SINK@", "1"], capture=False)
                 self.audio_muted_by_script = True
             return
+
         if shutil.which("wpctl"):
             self.audio_backend = "wpctl"
-            _, out = run_cmd(["wpctl", "get-mute", "@DEFAULT_SINK@"])
+            _, out = run_cmd(["wpctl", "get-mute", "@DEFAULT_SINK@"], capture=True)
             self.prev_mute = out.strip() if out else "unknown"
             if self.prev_mute not in ("true", "True"):
                 run_cmd(["wpctl", "set-mute", "@DEFAULT_SINK@", "true"], capture=False)
                 self.audio_muted_by_script = True
             return
+
         if shutil.which("amixer"):
             self.audio_backend = "amixer"
-            _, out = run_cmd(["amixer", "get", "Master"])
+            _, out = run_cmd(["amixer", "get", "Master"], capture=True)
             prev = "unknown"
-            for token in out.split():
+            for token in (out or "").split():
                 if token.startswith("[on]") or token.startswith("[off]") or token in ("[on]", "[off]"):
                     prev = token.strip("[]")
                     break
@@ -53,5 +59,5 @@ class AudioManager:
             elif self.audio_backend == "amixer":
                 if self.prev_mute == "on":
                     run_cmd(["amixer", "set", "Master", "unmute"], capture=False)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("Failed to restore audio: %s", exc)
