@@ -1,7 +1,3 @@
 .vscode
 docs/TODO
-packages/capture/node_modules
-packages/capture/package-lock.json
-packages/panel/node_modules
 packages/panel/config.private.json
-packages/panel/package-lock.json
