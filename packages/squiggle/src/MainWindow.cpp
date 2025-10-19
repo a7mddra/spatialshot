@@ -155,9 +155,26 @@ MainWindow::MainWindow(int displayNum, const QString& imagePath, QScreen* screen
     : QMainWindow(parent), m_displayNum(displayNum), m_drawView(new DrawView(imagePath, this)) {
     
     setCentralWidget(m_drawView);
-    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool | Qt::Popup);
+    setAttribute(Qt::WA_ShowWithoutActivating);    
     setAttribute(Qt::WA_TranslucentBackground, false);
     setScreen(screen);
     setGeometry(screen->geometry());
+
+    #ifdef Q_OS_WIN
+    #include <dwmapi.h>
+
+    BOOL attrib = TRUE;
+    DwmSetWindowAttribute((HWND)winId(), DWMWA_TRANSITIONS_FORCEDISABLED, &attrib, sizeof(attrib));
+    #endif
+
+    #ifdef Q_OS_MACOS
+    #include <Cocoa/Cocoa.h>
+
+    NSView *nsview = reinterpret_cast<NSView *>(winId());
+    NSWindow *nswindow = [nsview window];
+    [nswindow setAnimationBehavior: NSWindowAnimationBehaviorNone];
+    #endif
+
     showFullScreen();
 }

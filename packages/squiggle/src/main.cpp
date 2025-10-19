@@ -6,6 +6,10 @@
 #include <QDebug>
 
 int main(int argc, char *argv[]) {
+#ifdef Q_OS_LINUX
+    qputenv("QT_QPA_PLATFORM", "xcb");
+#endif
+
     QApplication app(argc, argv);
     app.setApplicationName("spatialshot-squiggle");
     app.setApplicationVersion("1.0.0");
