@@ -9,6 +9,8 @@
   "license": "MIT",
   "scripts": {
     "start": "electron .",
+    "build:css": "sass pages/welcome/style.scss:pages/welcome/style.css",
+    "watch:css": "sass --watch pages/welcome/style.scss:pages/welcome/style.css",
     "dev": "NODE_ENV=development electron .",
     "dev:win": "set NODE_ENV=development&& electron .",
     "build": "electron-builder",

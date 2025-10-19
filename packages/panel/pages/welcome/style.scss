@@ -1,4 +1,5 @@
 @use 'sass:map';
+@use 'sass:list';
 
 // --- Particle Data ---
 $particles: (
@@ -237,12 +238,12 @@ $particles: (
   100% { transform: translateX(600px) translateY(-600px); opacity: 0; }
 }
 
-@for $i from 1 through length($particles) {
-  $particle-data: nth($particles, $i);
+@for $i from 1 through list.length($particles) {
+  $particle-data: list.nth($particles, $i);
   .particle:nth-child(#{$i}) {
-    animation-duration: nth($particle-data, 1);
-    animation-delay:    nth($particle-data, 2);
-    bottom:             nth($particle-data, 3);
-    left:               nth($particle-data, 4);
+    animation-duration: list.nth($particle-data, 1);
+    animation-delay:    list.nth($particle-data, 2);
+    bottom:             list.nth($particle-data, 3);
+    left:               list.nth($particle-data, 4);
   }
 }
