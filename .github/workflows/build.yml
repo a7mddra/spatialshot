@@ -1,5 +1,3 @@
-# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
-
 name: Build Static Binaries
 
 on:
@@ -66,9 +64,9 @@ jobs:
           path: ${{ env.QT_INSTALL_DIR }}
           key: ${{ runner.os }}-qt-static-${{ env.QT_VERSION }}-${{ hashFiles('CMakeLists.txt') }}
 
-      - name: Build Qt Static from Source
-        if: steps.cache-qt.outputs.cache-hit != 'true'
-        shell: ${{ runner.os == 'Windows' && 'msys2 {0}' || 'bash {0}' }}
+      - name: Build Qt Static from Source (Windows)
+        if: steps.cache-qt.outputs.cache-hit != 'true' && runner.os == 'Windows'
+        shell: msys2 {0}
         run: |
           QT_SRC_DIR="${{ runner.temp }}/qt-src"
           mkdir -p "$QT_SRC_DIR"
@@ -84,21 +82,47 @@ jobs:
             -skip qtserialport -skip qtshadertools -skip qtspeech -skip qtsvg -skip qttools \
             -skip qttranslations -skip qtvirtualkeyboard -skip qtwayland -skip qtwebchannel \
             -skip qtwebengine -skip qtwebsockets -skip qtwebview -opengl desktop
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            jom -j$NUMBER_OF_PROCESSORS
-            jom install
-          elif [ "${{ runner.os }}" = "Linux" ]; then
+          jom -j$NUMBER_OF_PROCESSORS
+          jom install
+
+      - name: Build Qt Static from Source (Unix)
+        if: steps.cache-qt.outputs.cache-hit != 'true' && (runner.os == 'Linux' || runner.os == 'macOS')
+        shell: bash
+        run: |
+          QT_SRC_DIR="${{ runner.temp }}/qt-src"
+          mkdir -p "$QT_SRC_DIR"
+          cd "$QT_SRC_DIR"
+          curl -L -o qt.tar.xz "$QT_SOURCE_URL"
+          tar -xf qt.tar.xz --strip-components=1
+          ./configure -static -release -opensource -confirm-license -prefix "$QT_INSTALL_DIR" \
+            -nomake examples -nomake tests -nomake tools \
+            -skip qt3d -skip qt5compat -skip qtactiveqt -skip qtcharts -skip qtconnectivity -skip qtdatavis3d \
+            -skip qtdoc -skip qtgamepad -skip qtgraphicaleffects -skip qtlocation -skip qtlottie \
+            -skip qtmultimedia -skip qtnetworkauth -skip qtquick3d -skip qtquickcontrols -skip qtquickcontrols2 \
+            -skip qtquicktimeline -skip qtremoteobjects -skip qtscxml -skip qtsensors -skip qtserialbus \
+            -skip qtserialport -skip qtshadertools -skip qtspeech -skip qtsvg -skip qttools \
+            -skip qttranslations -skip qtvirtualkeyboard -skip qtwayland -skip qtwebchannel \
+            -skip qtwebengine -skip qtwebsockets -skip qtwebview -opengl desktop
+          if [ "${{ runner.os }}" = "Linux" ]; then
             make -j$(nproc)
-            make install
           else  # macOS
             make -j$(sysctl -n hw.logicalcpu)
-            make install
           fi
+          make install
 
-      - name: Build Application
+      - name: Build Application (Windows)
+        if: runner.os == 'Windows'
         env:
           CMAKE_PREFIX_PATH: ${{ env.QT_INSTALL_DIR }}
-        shell: ${{ runner.os == 'Windows' && 'msys2 {0}' || 'bash {0}' }}
+        shell: msys2 {0}
+        run: |
+          python3 build.py
+
+      - name: Build Application (Unix)
+        if: runner.os == 'Linux' || runner.os == 'macOS'
+        env:
+          CMAKE_PREFIX_PATH: ${{ env.QT_INSTALL_DIR }}
+        shell: bash
         run: |
           python3 build.py
 
