@@ -10,7 +10,6 @@ int main(int argc, char *argv[]) {
     app.setApplicationName("spatialshot-squiggle");
     app.setApplicationVersion("1.0.0");
 
-    // Parse CLI arguments (-- n for monitor number)
     QCommandLineParser parser;
     parser.addHelpOption();
     parser.addVersionOption();
@@ -19,7 +18,6 @@ int main(int argc, char *argv[]) {
     const QStringList args = parser.positionalArguments();
     int monitorArg = args.isEmpty() ? -1 : args.first().toInt();
 
-    // Get tmp path (cross-platform)
     QString tmpPath;
 #ifdef Q_OS_WIN
     tmpPath = QDir::home().filePath("AppData/Roaming/spatialshot/tmp");
@@ -28,20 +26,18 @@ int main(int argc, char *argv[]) {
 #endif
     QDir(tmpPath).mkpath(".");
 
-    // Get all screens and map to ycaptool numbering (primary = 1, attached = 2+)
     const QList<QScreen*> screens = QGuiApplication::screens();
-    QMap<int, int> monitorMapping; // Qt index -> ycaptool number
+    QMap<int, int> monitorMapping; 
     int monitorNumber = 1;
     int primaryIndex = screens.indexOf(QGuiApplication::primaryScreen());
-    if (primaryIndex < 0) primaryIndex = 0; // Fallback
-    monitorMapping[primaryIndex] = monitorNumber++; // Primary = 1
+    if (primaryIndex < 0) primaryIndex = 0; 
+    monitorMapping[primaryIndex] = monitorNumber++; 
     for (int i = 0; i < screens.size(); ++i) {
         if (i != primaryIndex) {
-            monitorMapping[i] = monitorNumber++; // Attached = 2, 3, etc.
+            monitorMapping[i] = monitorNumber++; 
         }
     }
 
-    // Log screens for debugging
     qDebug() << "Available displays:";
     for (int i = 0; i < screens.size(); ++i) {
         QScreen* screen = screens[i];
@@ -55,10 +51,8 @@ int main(int argc, char *argv[]) {
                     .arg(screen == QGuiApplication::primaryScreen());
     }
 
-    // Determine target monitors
     QList<int> targetIndexes;
     if (monitorArg > 0 && monitorMapping.values().contains(monitorArg)) {
-        // Single monitor mode
         int qtIndex = monitorMapping.key(monitorArg);
         if (qtIndex < screens.size()) {
             targetIndexes.append(qtIndex);
@@ -67,11 +61,9 @@ int main(int argc, char *argv[]) {
             targetIndexes.append(primaryIndex);
         }
     } else {
-        // All monitors mode
         targetIndexes = monitorMapping.keys();
     }
 
-    // Create windows for each target monitor
     QList<MainWindow*> windows;
     for (int index : targetIndexes) {
         QScreen* screen = screens[index];

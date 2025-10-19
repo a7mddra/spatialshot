@@ -10,7 +10,7 @@
 #include <QGraphicsDropShadowEffect>
 
 DrawView::DrawView(const QString& imagePath, QWidget* parent)
-    : QGraphicsView(parent), m_background(imagePath), m_smoothedPoint(0,0) { // <-- Initialize m_smoothedPoint
+    : QGraphicsView(parent), m_background(imagePath), m_smoothedPoint(0,0) { 
     
     m_scene = new QGraphicsScene(this);
     setScene(m_scene);
@@ -30,22 +30,15 @@ void DrawView::mousePressEvent(QMouseEvent* event) {
         if (m_hasDrawing) clearCanvas();
         m_isDrawing = true;
         
-        // --- MODIFIED LINES ---
-        // Get the raw "real" cursor position
         QPointF currentPoint = mapToScene(event->pos());
-        // Initialize the smoother to this exact start point
         m_smoothedPoint = currentPoint; 
         
-        // Start the path at the (now smoothed) point
         m_path.moveTo(m_smoothedPoint);
         updateBounds(m_smoothedPoint.x(), m_smoothedPoint.y());
-        // --- END MODIFIED LINES ---
         
-        // Create the path item that will be drawn
         m_pathItem = new QGraphicsPathItem();
         m_pathItem->setPen(QPen(m_brushColor, m_brushSize, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
 
-        // Glow effect
         QGraphicsDropShadowEffect* glow = new QGraphicsDropShadowEffect();
         glow->setBlurRadius(m_glowAmount * 2); 
         glow->setColor(m_brushColor);
@@ -59,39 +52,26 @@ void DrawView::mousePressEvent(QMouseEvent* event) {
 void DrawView::mouseMoveEvent(QMouseEvent* event) {
     if (!m_isDrawing) return;
 
-    // --- ENTIRELY NEW LOGIC ---
     
-    // 1. Get the raw "real" cursor position
     QPointF currentPoint = mapToScene(event->pos());
 
-    // 2. Calculate the new smoothed point
-    // This is the weighted average: 
-    // 80% of the old smoothed position + 20% of the new raw position
     QPointF newSmoothedPoint = (m_smoothedPoint * (1.0 - m_smoothingFactor)) + (currentPoint * m_smoothingFactor);
     
-    // 3. Use the *old* smoothed point as control, and the midpoint to the *new* one as the end
     QPointF midPoint = (m_smoothedPoint + newSmoothedPoint) / 2.0;
     m_path.quadTo(m_smoothedPoint, midPoint);
 
-    // 4. Update the graphics item
     m_pathItem->setPath(m_path);
     
-    // 5. Store the new smoothed point for the next event
     m_smoothedPoint = newSmoothedPoint;
     
-    // 6. Update bounds with the smoothed point
     updateBounds(m_smoothedPoint.x(), m_smoothedPoint.y());
-    // --- END NEW LOGIC ---
 }
 
 void DrawView::mouseReleaseEvent(QMouseEvent* event) {
     if (event->button() == Qt::LeftButton && m_isDrawing) {
         
-        // --- MODIFIED LINE ---
-        // Draw the final segment to the last smoothed point
         m_path.lineTo(m_smoothedPoint);
-        m_pathItem->setPath(m_path); // Final update
-        // --- END MODIFIED LINE ---
+        m_pathItem->setPath(m_path); 
         
         m_isDrawing = false;
         m_hasDrawing = true;
@@ -121,7 +101,6 @@ void DrawView::updateBounds(qreal x, qreal y) {
 }
 
 void DrawView::updateBoundsDisplay() {
-    // This function is still not needed
 }
 
 void DrawView::clearCanvas() {
@@ -140,7 +119,6 @@ void DrawView::clearCanvas() {
 }
 
 void DrawView::cropAndSave() {
-    // This logic remains exactly the same
     qreal width = m_maxX - m_minX;
     qreal height = m_maxY - m_minY;
     qreal clampedX = qMax(0.0, m_minX);

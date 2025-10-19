@@ -1,0 +1,104 @@
+name: Build Static Binaries
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    env:
+      QT_VERSION: 6.2.4
+      QT_INSTALL_DIR: ${{ runner.temp }}/Qt/static
+      QT_SOURCE_URL: https://download.qt.io/archive/qt/${{ env.QT_VERSION % .* }}/${{ env.QT_VERSION }}/single/qt-everywhere-src-${{ env.QT_VERSION }}.tar.xz
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential perl python3 ninja-build bison flex gperf libclang-dev libssl-dev \
+            libfontconfig1-dev libfreetype6-dev libx11-dev libx11-xcb-dev libxext-dev libxfixes-dev libxi-dev libxrender-dev \
+            libxcb1-dev libxcb-cursor-dev libxcb-glx0-dev libxcb-keysyms1-dev libxcb-image0-dev libxcb-icccm4-dev \
+            libxcb-sync-dev libxcb-xkb-dev libxkbcommon-dev libxcb-xrm-dev libxcb-render-util0-dev libxkbcommon-x11-dev \
+            libatspi2.0-dev libgl1-mesa-dev libglu1-mesa-dev mesa-common-dev libdbus-1-dev
+
+      - name: Install macOS dependencies
+        if: runner.os == 'macOS'
+        run: |
+          brew install ninja
+
+      - name: Install Windows dependencies (MSYS2/MinGW)
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc mingw-w64-x86_64-ninja mingw-w64-x86_64-perl mingw-w64-x86_64-python
+            mingw-w64-x86_64-openssl mingw-w64-x86_64-icu mingw-w64-x86_64-pcre2 mingw-w64-x86_64-zlib
+            mingw-w64-x86_64-libpng mingw-w64-x86_64-freetype mingw-w64-x86_64-fontconfig
+            mingw-w64-x86_64-sqlite3 mingw-w64-x86_64-harfbuzz mingw-w64-x86_64-libjpeg-turbo
+            mingw-w64-x86_64-libwebp mingw-w64-x86_64-libxml2 mingw-w64-x86_64-gettext
+            mingw-w64-x86_64-brotli mingw-w64-x86_64-jom
+
+      - name: Cache Static Qt
+        id: cache-qt
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.QT_INSTALL_DIR }}
+          key: ${{ runner.os }}-qt-static-${{ env.QT_VERSION }}-${{ hashFiles('CMakeLists.txt') }}
+
+      - name: Build Qt Static from Source
+        if: steps.cache-qt.outputs.cache-hit != 'true'
+        shell: ${{ runner.os == 'Windows' && 'msys2 {0}' || 'bash {0}' }}
+        run: |
+          QT_SRC_DIR="${{ runner.temp }}/qt-src"
+          mkdir -p "$QT_SRC_DIR"
+          cd "$QT_SRC_DIR"
+          curl -L -o qt.tar.xz "$QT_SOURCE_URL"
+          tar -xf qt.tar.xz --strip-components=1
+          ./configure -static -release -opensource -confirm-license -prefix "$QT_INSTALL_DIR" \
+            -nomake examples -nomake tests -nomake tools \
+            -skip qt3d -skip qt5compat -skip qtactiveqt -skip qtcharts -skip qtconnectivity -skip qtdatavis3d \
+            -skip qtdoc -skip qtgamepad -skip qtgraphicaleffects -skip qtlocation -skip qtlottie \
+            -skip qtmultimedia -skip qtnetworkauth -skip qtquick3d -skip qtquickcontrols -skip qtquickcontrols2 \
+            -skip qtquicktimeline -skip qtremoteobjects -skip qtscxml -skip qtsensors -skip qtserialbus \
+            -skip qtserialport -skip qtshadertools -skip qtspeech -skip qtsvg -skip qttools \
+            -skip qttranslations -skip qtvirtualkeyboard -skip qtwayland -skip qtwebchannel \
+            -skip qtwebengine -skip qtwebsockets -skip qtwebview -opengl desktop
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            jom -j$NUMBER_OF_PROCESSORS
+            jom install
+          elif [ "${{ runner.os }}" = "Linux" ]; then
+            make -j$(nproc)
+            make install
+          else  # macOS
+            make -j$(sysctl -n hw.logicalcpu)
+            make install
+          fi
+
+      - name: Build Application
+        env:
+          CMAKE_PREFIX_PATH: ${{ env.QT_INSTALL_DIR }}
+        shell: ${{ runner.os == 'Windows' && 'msys2 {0}' || 'bash {0}' }}
+        run: |
+          python3 build.py
+
+      - name: Upload Binary Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ runner.os }}-binary
+          path: dist/*
+          retention-days: 7

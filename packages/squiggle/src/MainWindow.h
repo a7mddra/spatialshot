@@ -30,17 +30,8 @@ private:
     QPainterPath m_path;
     bool m_isDrawing = false;
     bool m_hasDrawing = false;
-    
-    // --- MODIFIED LINES ---
-    QPointF m_smoothedPoint; // Replaces m_lastPoint
-    
-    // This is your new "smoothness" knob.
-    // Lower = smoother, more "lag" (e.g., 0.1)
-    // Higher = more responsive, less smooth (e.g., 0.5)
-    // 1.0 = no smoothing (raw mouse input)
+    QPointF m_smoothedPoint; 
     const qreal m_smoothingFactor = 0.2; 
-    // --- END MODIFIED LINES ---
-
     qreal m_minX, m_maxX, m_minY, m_maxY;
     const qreal m_brushSize = 5.0;
     const qreal m_glowAmount = 10.0;
@@ -57,4 +48,4 @@ private:
     DrawView* m_drawView;
 };
 
-#endif // MAINWINDOW_H
+#endif
