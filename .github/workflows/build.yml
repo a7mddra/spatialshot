@@ -19,6 +19,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set environment variables
+        shell: bash
         run: |
           echo "QT_INSTALL_DIR=${{ runner.temp }}/Qt/static" >> $GITHUB_ENV
           echo "QT_SOURCE_URL=https://download.qt.io/archive/qt/${{ env.QT_MAJOR_MINOR }}/${{ env.QT_VERSION }}/single/qt-everywhere-src-${{ env.QT_VERSION }}.tar.xz" >> $GITHUB_ENV
