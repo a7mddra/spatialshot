@@ -1,3 +1,5 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
 name: Build Static Binaries
 
 on:
@@ -14,10 +16,13 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     env:
       QT_VERSION: 6.2.4
+      QT_MAJOR_MINOR: 6.2
       QT_INSTALL_DIR: ${{ runner.temp }}/Qt/static
-      QT_SOURCE_URL: https://download.qt.io/archive/qt/${{ env.QT_VERSION % .* }}/${{ env.QT_VERSION }}/single/qt-everywhere-src-${{ env.QT_VERSION }}.tar.xz
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set QT_SOURCE_URL
+        run: echo "QT_SOURCE_URL=https://download.qt.io/archive/qt/${{ env.QT_MAJOR_MINOR }}/${{ env.QT_VERSION }}/single/qt-everywhere-src-${{ env.QT_VERSION }}.tar.xz" >> $GITHUB_ENV
 
       - name: Set up Python
         uses: actions/setup-python@v5
