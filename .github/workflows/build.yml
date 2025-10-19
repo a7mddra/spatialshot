@@ -1,5 +1,3 @@
-# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
-
 name: Build Static Binaries
 
 on:
@@ -13,7 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windowsighty-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
     env:
       QT_VERSION: 6.2.4
       QT_MAJOR_MINOR: 6.2
@@ -34,24 +32,21 @@ jobs:
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get update || (sleep 5 && sudo apt-get update)  # Retry on network failure
-          sudo apt-get install -y build-essential perl python3 ninja-build bison flex gperf \
-            libclang-dev libssl-dev libfontconfig1-dev libfreetype6-dev libx11-dev libx11-xcb-dev \
-            libxext-dev libxfixes-dev libxi-dev libxrender-dev libxcb1-dev libxcb-cursor-dev \
-            libxcb-glx0-dev libxcb-keysyms1-dev libxcb-image0-dev libxcb-icccm4-dev \
-            libxcb-sync-dev libxcb-xkb-dev libxkbcommon-dev libxcb-xrm-dev libxcb-render-util0-dev \
-            libxkbcommon-x11-dev libatspi2.0-dev libgl1-mesa-dev libglu1-mesa-dev mesa-common-dev \
-            libdbus-1-dev
-        continue-on-error: false
+          set -e
+          echo "--- Updating package list ---"
+          sudo apt-get update
+          echo "--- Installing dependencies ---"
+          sudo apt-get install -y build-essential perl python3 ninja-build bison flex gperf libclang-dev libssl-dev \
+            libfontconfig1-dev libfreetype6-dev libx11-dev libx11-xcb-dev libxext-dev libxfixes-dev libxi-dev libxrender-dev \
+            libxcb1-dev libxcb-cursor-dev libxcb-glx0-dev libxcb-keysyms1-dev libxcb-image0-dev libxcb-icccm4-dev \
+            libxcb-sync-dev libxcb-xkb-dev libxkbcommon-dev libxcb-xrm-dev libxcb-render-util0-dev libxkbcommon-x11-dev \
+            libatspi2.0-dev libgl1-mesa-dev libglu1-mesa-dev mesa-common-dev libdbus-1-dev
+          echo "--- Dependencies installed ---" 
 
       - name: Install macOS dependencies
         if: runner.os == 'macOS'
         run: |
-          if ! command -v ninja >/dev/null 2>&1; then
-            brew install ninja
-          else
-            echo "Ninja already installed"
-          fi
+          brew install ninja
 
       - name: Install Windows dependencies (MSYS2/MinGW)
         if: runner.os == 'Windows'
@@ -74,9 +69,9 @@ jobs:
           path: ${{ env.QT_INSTALL_DIR }}
           key: ${{ runner.os }}-qt-static-${{ env.QT_VERSION }}-${{ hashFiles('CMakeLists.txt') }}
 
-      - name: Build Qt Static from Source
-        if: steps.cache-qt.outputs.cache-hit != 'true'
-        shell: ${{ runner.os == 'Windows' && 'msys2 {0}' || 'bash {0}' }}
+      - name: Build Qt Static from Source (Windows)
+        if: steps.cache-qt.outputs.cache-hit != 'true' && runner.os == 'Windows'
+        shell: msys2 {0}
         run: |
           QT_SRC_DIR="${{ runner.temp }}/qt-src"
           mkdir -p "$QT_SRC_DIR"
@@ -92,38 +87,57 @@ jobs:
             -skip qtserialport -skip qtshadertools -skip qtspeech -skip qtsvg -skip qttools \
             -skip qttranslations -skip qtvirtualkeyboard -skip qtwayland -skip qtwebchannel \
             -skip qtwebengine -skip qtwebsockets -skip qtwebview -opengl desktop
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            jom -j$NUMBER_OF_PROCESSORS
-            jom install
-          elif [ "${{ runner.os }}" = "Linux" ]; then
+          jom -j$NUMBER_OF_PROCESSORS
+          jom install
+
+      - name: Build Qt Static from Source (Unix)
+        if: steps.cache-qt.outputs.cache-hit != 'true' && (runner.os == 'Linux' || runner.os == 'macOS')
+        shell: bash
+        run: |
+          set -e
+          echo "--- Starting Qt source build ---"
+          QT_SRC_DIR="${{ runner.temp }}/qt-src"
+          mkdir -p "$QT_SRC_DIR"
+          cd "$QT_SRC_DIR"
+          echo "--- Downloading Qt source ---"
+          curl -L -o qt.tar.xz "$QT_SOURCE_URL"
+          echo "--- Extracting Qt source ---"
+          tar -xf qt.tar.xz --strip-components=1
+          echo "--- Configuring Qt ---"
+          ./configure -static -release -opensource -confirm-license -prefix "$QT_INSTALL_DIR" \
+            -nomake examples -nomake tests -nomake tools \
+            -skip qt3d -skip qt5compat -skip qtactiveqt -skip qtcharts -skip qtconnectivity -skip qtdatavis3d \
+            -skip qtdoc -skip qtgamepad -skip qtgraphicaleffects -skip qtlocation -skip qtlottie \
+            -skip qtmultimedia -skip qtnetworkauth -skip qtquick3d -skip qtquickcontrols -skip qtquickcontrols2 \
+            -skip qtquicktimeline -skip qtremoteobjects -skip qtscxml -skip qtsensors -skip qtserialbus \
+            -skip qtserialport -skip qtshadertools -skip qtspeech -skip qtsvg -skip qttools \
+            -skip qttranslations -skip qtvirtualkeyboard -skip qtwayland -skip qtwebchannel \
+            -skip qtwebengine -skip qtwebsockets -skip qtwebview -opengl desktop
+          echo "--- Building Qt ---"
+          if [ "${{ runner.os }}" = "Linux" ]; then
             make -j$(nproc)
-            make install
           else  # macOS
             make -j$(sysctl -n hw.logicalcpu)
-            make install
           fi
-          if [ -f config.log ]; then
-            echo "=== Qt config.log ==="
-            cat config.log
-          fi
-        continue-on-error: false
+          echo "--- Installing Qt ---"
+          make install
+          echo "--- Qt build finished ---" 
 
-      - name: Upload Qt config.log on Failure
-        if: failure() && steps.cache-qt.outputs.cache-hit != 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ runner.os }}-qt-config-log
-          path: ${{ runner.temp }}/qt-src/config.log
-          retention-days: 7
-
-      - name: Build Application
+      - name: Build Application (Windows)
+        if: runner.os == 'Windows'
         env:
           CMAKE_PREFIX_PATH: ${{ env.QT_INSTALL_DIR }}
-        shell: ${{ runner.os == 'Windows' && 'msys2 {0}' || 'bash {0}' }}
+        shell: msys2 {0}
         run: |
           python3 build.py
-          ls -l dist/
-        continue-on-error: false
+
+      - name: Build Application (Unix)
+        if: runner.os == 'Linux' || runner.os == 'macOS'
+        env:
+          CMAKE_PREFIX_PATH: ${{ env.QT_INSTALL_DIR }}
+        shell: bash
+        run: |
+          python3 build.py
 
       - name: Upload Binary Artifact
         uses: actions/upload-artifact@v4
