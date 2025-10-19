@@ -1,36 +1,33 @@
-
 # SpatialShot Development Core
 
 This directory contains the core development launcher for SpatialShot.
 
 ## Development Launcher (`main.py`)
 
-The `main.py` script is the primary entry point for developers working on SpatialShot. It automates the process of taking screenshots and launching the Electron-based capture analysis tool.
+The `main.py` script serves as the primary entry point for developers. It is designed to orchestrate the complete, cross-platform application flow, automating the capture process and launching the user interface for analysis.
+
+This script enables developers to test the full application lifecycle using Python, without needing to compile the final Rust orchestrator.
 
 ### How it Works
 
-1.  **Environment Detection:** The script begins by identifying the user's operating system (Windows, macOS, or Linux) and display server environment (X11 or Wayland on Linux). It also detects the number of connected monitors.
+The launcher executes the entire application workflow in a precise sequence:
 
-2.  **Temporary Directory Management:** It creates a temporary directory to store the captured screenshots. This directory is cleared at the start of each run.
-    *   **Unix-like systems (Linux, macOS):** `~/.config/spatialshot/tmp`
-    *   **Windows:** `%APPDATA%\spatialshot\tmp`
-
-3.  **Platform-Specific Capture:** Based on the detected environment, the script executes a platform-specific capture process:
-    *   **Windows:** Runs the `win32.ps1` PowerShell script.
-    *   **macOS:** Executes the `darwin.sh` shell script.
-    *   **Linux (X11):** Executes the `x11.sh` shell script.
-    *   **Linux (Wayland):** Uses the `ycaptool` binary. If multiple monitors are detected, it launches a selector UI.
-
-4.  **Screenshot Monitoring:** After initiating the capture, the script monitors the temporary directory for the expected number of PNG images (one per monitor, or one for `ycaptool`).
-
-5.  **Electron App Launch:** Once the screenshots are successfully captured, the script starts the Electron application located in `packages/capture` in development mode.
+1. **Environment Detection:** The script first identifies the host operating system (Windows, macOS, or Linux) and, on Linux, distinguishes between X11 and Wayland display servers.
+2. **Directory Management:** It locates the platform-specific temporary directory (e.g., `~/.config/spatialshot/tmp` or `%APPDATA%\spatialshot\tmp`) and clears its contents to ensure a clean state for the current session.
+3. **Platform-Specific Capture:** Based on the detected environment, the script executes the appropriate "freezer" (screenshot) utility:
+      * **Windows:** `win3s2.ps1`
+      * **macOS:** `darwin.sh`
+      * **Linux (X11):** `x11.sh`
+      * **Linux (Wayland):** The `ycaptool` binary. If multiple monitors are detected, this will launch the display selection UI.
+4. **Drawing Interface Launch:** The script monitors the temporary directory for the newly created screenshot(s). Upon detection, it launches the C++/Qt **`squiggle`** application, which provides the drawing interface.
+5. **UI Panel Handoff:** After the user completes the drawing, the script waits for `squiggle` to save the final cropped image (`output.png`). Once this file is present, the script launches the Electron **`panel`** application via `npm start`, passing the output image path as an argument for analysis.
 
 ### Usage
 
-To run the development launcher, simply execute the script from your terminal:
+To run the development launcher, execute the script from your terminal:
 
 ```bash
-python3 main.py
+python3 launcher.py
 ```
 
-The script handles the rest of the process, providing log output to the console for each step.
+The script will provide detailed log output to the console for each stage of the process, aiding in debugging and development.
