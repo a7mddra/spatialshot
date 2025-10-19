@@ -7,6 +7,7 @@ from typing import Tuple
 
 from utils import run_cmd
 from audio import AudioManager
+from notify import NotificationManager
 
 logger = logging.getLogger("ycaptool.cli.capture")
 
@@ -14,6 +15,7 @@ logger = logging.getLogger("ycaptool.cli.capture")
 class Capture:
     def __init__(self):
         self.audio_manager = AudioManager()
+        self.notify_manager = NotificationManager()
 
     def get_flameshot_path(self) -> str:
         try:
@@ -45,7 +47,8 @@ class Capture:
         if display_num <= 0:
             return False, "invalid display number"
 
-        save_path = Path(os.environ.get("SC_SAVE_PATH", Path.home() / ".config" / "spatialshot" / "tmp"))
+        SC_SAVE_PATH = Path.home() / ".config" / "spatialshot" / "tmp"
+        save_path = Path(os.environ.get("SC_SAVE_PATH", SC_SAVE_PATH))
         save_path.mkdir(parents=True, exist_ok=True)
         image_fmt = "png"
         output_file = save_path / f"{display_num}.{image_fmt}"
@@ -55,11 +58,16 @@ class Capture:
 
         try:
             self.audio_manager.mute_audio()
+            self.notify_manager.enable_dnd()
         except Exception as exc:
             logger.warning("Could not mute audio: %s", exc)
 
         try:
-            rc, out = run_cmd([flameshot_path, "screen", "-n", str(flameshot_index), "--path", str(output_file)], capture=True)
+            rc, out = run_cmd([
+                                flameshot_path, "screen", "-n",
+                                str(flameshot_index), "--path",
+                                str(output_file)
+                                ], capture=True)
             if rc == 0:
                 return True, f"Saved: {output_file}"
             msg = f"Capture failed for display {display_num} (rc={rc})"
@@ -71,5 +79,6 @@ class Capture:
         finally:
             try:
                 self.audio_manager.restore_audio()
+                self.notify_manager.restore_dnd()
             except Exception as exc:
                 logger.warning("Could not restore audio: %s", exc)
