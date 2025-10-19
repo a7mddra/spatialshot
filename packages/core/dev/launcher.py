@@ -408,6 +408,7 @@ def launch_squiggle(
 def launch_electron(output_png: Path) -> bool:
     """
     Launches the Electron Panel application in development mode.
+    Checks for compiled CSS and builds it if missing.
 
     Args:
         output_png: The path to the final cropped image.
@@ -419,6 +420,28 @@ def launch_electron(output_png: Path) -> bool:
         logger.error("Electron project not found: %s", ELECTRON_PROJECT)
         logger.info("Run: cd packages/panel && npm install")
         return False
+
+    # --- CSS Check ---
+    welcome_css = ELECTRON_PROJECT / "pages" / "welcome" / "style.css"
+    if not welcome_css.exists():
+        logger.info("Welcome CSS not found. Running one-time Sass build...")
+        build_command = ["npm", "run", "build:css"]
+        try:
+            success, _, err = _run_process(build_command, cwd=ELECTRON_PROJECT)
+            if not success:
+                logger.error("Sass build failed. See logs.")
+                logger.error(err)
+                return False
+            
+            if not welcome_css.exists():
+                logger.error("Sass build ran but output file is still missing: %s", welcome_css)
+                return False
+                
+            logger.info("Sass build complete.")
+        except Exception as exc:
+            logger.error("Failed to run Sass build command: %s", exc)
+            return False
+    # --- End CSS Check ---
 
     logger.info("Starting Electron (npm start) for: %s", output_png.name)
     
