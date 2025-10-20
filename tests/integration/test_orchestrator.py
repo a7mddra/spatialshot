@@ -3,14 +3,14 @@ from launcher import run_screenshot_capture, launch_squiggle, launch_electron, c
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+PRJKT_ROOT = Path(__file__).resolve().parent.parent.parent
 
 class TestOrchestrator:
     @pytest.mark.parametrize("env,script_path,expected_count", [
-        ("win32", REPO_ROOT / "packages/core/windows/win32.ps1", 2),
-        ("darwin", REPO_ROOT / "packages/core/macos/darwin.sh", 2),
-        ("x11", REPO_ROOT / "packages/core/linux/x11.sh", 2),
-        ("wayland", REPO_ROOT / "packages/ycaptool/bin/ycaptool", 1),
+        ("win32", PRJKT_ROOT / "platform/win32/sc-grapper.ps1", 2),
+        ("darwin", PRJKT_ROOT / "platform/darwin/sc-grapper.sh", 2),
+        ("x11", PRJKT_ROOT / "platform/linux/sc-grapper.sh", 2),
+        ("wayland", PRJKT_ROOT / "packages/ycaptool/bin/ycaptool", 1),
     ])
     def test_run_screenshot_capture(
         self, env, script_path, expected_count, 
@@ -46,7 +46,7 @@ class TestOrchestrator:
     def test_launch_squiggle_success(self, platform_system, mock_subprocess_run, mock_path_exists, tmp_path_platform, mock_platform):
         mock_platform.return_value = platform_system
         ext = ".exe" if platform_system == "Windows" else ""
-        expected_path = REPO_ROOT / f"packages/squiggle/dist/spatialshot-squiggle{ext}"
+        expected_path = PRJKT_ROOT / f"packages/squiggle/dist/spatialshot-squiggle{ext}"
         with patch("launcher.SQUIGGLE_BINARY", expected_path):
             mock_path_exists.return_value = True
             output_png = launch_squiggle(tmp_path_platform, None)
@@ -61,7 +61,7 @@ class TestOrchestrator:
     def test_launch_squiggle_with_monitor(self, platform_system, mock_subprocess_run, mock_path_exists, tmp_path_platform, mock_platform):
         mock_platform.return_value = platform_system
         ext = ".exe" if platform_system == "Windows" else ""
-        expected_path = REPO_ROOT / f"packages/squiggle/dist/spatialshot-squiggle{ext}"
+        expected_path = PRJKT_ROOT / f"packages/squiggle/dist/spatialshot-squiggle{ext}"
         with patch("launcher.SQUIGGLE_BINARY", expected_path):
             mock_path_exists.return_value = True
             output_png = launch_squiggle(tmp_path_platform, 2)
@@ -83,7 +83,7 @@ class TestOrchestrator:
         assert success
         mock_subprocess_popen.assert_called_with(
             ["npm", "start", "--", str(tmp_path_platform / "output.png")],
-            cwd=REPO_ROOT / "packages/panel"
+            cwd=PRJKT_ROOT / "packages/spatialshot"
         )
 
     def test_launch_electron_missing_project(self, mock_subprocess_popen, mock_path_exists, tmp_path_platform):
