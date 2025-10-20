@@ -146,8 +146,6 @@ void DrawView::cropAndSave() {
         return;
     }
     qDebug() << "Cropped image saved to:" << outputPath;
-
-    QProcess::startDetached("spatialshot-panel", QStringList() << outputPath);
     QApplication::quit();
 }
 
