@@ -11,7 +11,7 @@ full application flow by orchestrating the various packages:
 4. Waits for the screenshot(s) to be created.
 5. Launches the "squiggle" (C++/Qt) drawing application.
 6. Waits for the final "output.png" to be saved.
-7. Launches the "panel" (Electron) UI to display the results.
+7. Launches the "spatialshot" (Electron) UI to display the results.
 
 This allows for rapid development and testing without needing to
 build the final Rust orchestrator.
@@ -33,31 +33,29 @@ from ctypes import byref, c_uint32
 from pathlib import Path
 from typing import Optional, List, Tuple
 
-# --- 1. Constants and Path Setup ---
-
+# --- Constants and Path Setup ---
 HOME = Path.home()
 SCRIPT_PATH = Path(__file__).resolve()
-DEV_ROOT = SCRIPT_PATH.parent
-CORE_ROOT = DEV_ROOT.parent
-PACKAGES_ROOT = CORE_ROOT.parent
-REPO_ROOT = PACKAGES_ROOT.parent
+DIR_PATH = SCRIPT_PATH.parent
+PRJKT_ROOT = DIR_PATH.parent
+PKGS_PATH = PRJKT_ROOT / "packages"
+PLATFORM_PATH = PRJKT_ROOT / "platform"
 
 # Temporary directory paths
 TMP_PATH_UNIX = HOME / ".config" / "spatialshot" / "tmp"
 TMP_PATH_WIN = HOME / "AppData" / "Roaming" / "spatialshot" / "tmp"
 
 # Binary and Script Paths
-YCAP_BINARY = PACKAGES_ROOT / "ycaptool" / "bin" / "ycaptool"
+YCAP_BINARY = PKGS_PATH / "ycaptool" / "bin" / "ycaptool"
 SQUIGGLE_BINARY_EXT = ".exe" if platform.system() == "Windows" else ""
 SQUIGGLE_BINARY_NAME = f"spatialshot-squiggle{SQUIGGLE_BINARY_EXT}"
-SQUIGGLE_BINARY = PACKAGES_ROOT / "squiggle" / "dist" / SQUIGGLE_BINARY_NAME
-ELECTRON_PROJECT = PACKAGES_ROOT / "panel"
-SCRIPT_WIN = CORE_ROOT / "windows" / "win32.ps1"
-SCRIPT_MAC = CORE_ROOT / "macos" / "darwin.sh"
-SCRIPT_X11 = CORE_ROOT / "linux" / "x11.sh"
+SQUIGGLE_BINARY = PKGS_PATH / "squiggle" / "dist" / SQUIGGLE_BINARY_NAME
+ELECTRON_NODE = PKGS_PATH / "spatialshot"
+SCRIPT_WIN = PLATFORM_PATH / "win32" / "sc-grapper.ps1"
+SCRIPT_MAC = PLATFORM_PATH / "darwin" / "sc-grapper.sh"
+SCRIPT_X11 = PLATFORM_PATH / "linux" / "sc-grapper.sh"
 
-# --- 2. Logging Setup ---
-
+# --- Logging Setup ---
 logging.basicConfig(
     level=logging.INFO,
     format="[%(levelname)s] (%(name)s) %(message)s",
@@ -66,8 +64,7 @@ logging.basicConfig(
 logger = logging.getLogger("spatialshot.dev")
 
 
-# --- 3. Environment Detection (from detector.py) ---
-
+# --- Environment Detection ---
 def identify_display_environment() -> str:
     """
     Identifies the host OS and display server.
@@ -210,8 +207,7 @@ def probe_monitor_count() -> int:
     return n if n is not None and n >= 1 else 1
 
 
-# --- 4. Core Utility Functions ---
-
+# --- Core Utility Functions ---
 def _run_process(
     command: List[str],
     cwd: Optional[Path] = None
@@ -300,7 +296,7 @@ def wait_for_file(file_path: Path, timeout_sec: int = 5) -> bool:
     return True
 
 
-# --- 5. Application Lifecycle Functions ---
+# --- Application Lifecycle Functions ---
 
 def run_screenshot_capture(
     env: str,
@@ -407,7 +403,7 @@ def launch_squiggle(
 
 def launch_electron(output_png: Path) -> bool:
     """
-    Launches the Electron Panel application in development mode.
+    Launches the Electron application in development mode.
     Checks for compiled CSS and builds it if missing.
 
     Args:
@@ -416,18 +412,18 @@ def launch_electron(output_png: Path) -> bool:
     Returns:
         True if the process started successfully, else False.
     """
-    if not ELECTRON_PROJECT.exists() or not (ELECTRON_PROJECT / "package.json").exists():
-        logger.error("Electron project not found: %s", ELECTRON_PROJECT)
-        logger.info("Run: cd packages/panel && npm install")
+    if not ELECTRON_NODE.exists() or not (ELECTRON_NODE / "package.json").exists():
+        logger.error("Electron project not found: %s", ELECTRON_NODE)
+        logger.info("Run: cd packages/spatialshot && npm install")
         return False
 
     # --- CSS Check ---
-    welcome_css = ELECTRON_PROJECT / "pages" / "welcome" / "style.css"
+    welcome_css = ELECTRON_NODE / "pages" / "welcome" / "style.css"
     if not welcome_css.exists():
         logger.info("Welcome CSS not found. Running one-time Sass build...")
         build_command = ["npm", "run", "build:css"]
         try:
-            success, _, err = _run_process(build_command, cwd=ELECTRON_PROJECT)
+            success, _, err = _run_process(build_command, cwd=ELECTRON_NODE)
             if not success:
                 logger.error("Sass build failed. See logs.")
                 logger.error(err)
@@ -449,16 +445,15 @@ def launch_electron(output_png: Path) -> bool:
     command = ["npm", "start", "--", str(output_png)]
     
     try:
-        subprocess.Popen(command, cwd=ELECTRON_PROJECT)
-        logger.info("Electron panel launched successfully.")
+        subprocess.Popen(command, cwd=ELECTRON_NODE)
+        logger.info("Electron launched successfully.")
         return True
     except Exception as exc:
         logger.error("Failed to start Electron process: %s", exc)
         return False
 
 
-# --- 6. Main Orchestrator ---
-
+# --- Main Orchestrator ---
 def main() -> None:
     """
     Main function to run the complete development flow.
@@ -533,9 +528,9 @@ def main() -> None:
     
     logger.info("Squiggle capture complete: %s", output_png)
 
-    # 6. Launch Electron Panel
+    # 6. Launch Electron
     if not launch_electron(output_png):
-        logger.error("Failed to launch Electron panel.")
+        logger.error("Failed to launch Electron.")
         sys.exit(1)
 
     logger.info("--- Development session launched successfully! ---")

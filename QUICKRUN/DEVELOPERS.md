@@ -2,9 +2,9 @@
 
 This directory contains the core development launcher for SpatialShot.
 
-## Development Launcher (`main.py`)
+## Development Launcher (`launcher.py`)
 
-The `main.py` script serves as the primary entry point for developers. It is designed to orchestrate the complete, cross-platform application flow, automating the capture process and launching the user interface for analysis.
+The `launcher.py` script serves as the primary entry point for developers. It is designed to orchestrate the complete, cross-platform application flow, automating the capture process and launching the user interface for analysis.
 
 This script enables developers to test the full application lifecycle using Python, without needing to compile the final Rust orchestrator.
 
@@ -20,7 +20,7 @@ The launcher executes the entire application workflow in a precise sequence:
       * **Linux (X11):** `x11.sh`
       * **Linux (Wayland):** The `ycaptool` binary. If multiple monitors are detected, this will launch the display selection UI.
 4. **Drawing Interface Launch:** The script monitors the temporary directory for the newly created screenshot(s). Upon detection, it launches the C++/Qt **`squiggle`** application, which provides the drawing interface.
-5. **UI Panel Handoff:** After the user completes the drawing, the script waits for `squiggle` to save the final cropped image (`output.png`). Once this file is present, the script launches the Electron **`panel`** application via `npm start`, passing the output image path as an argument for analysis.
+5. **UI Panel Handoff:** After the user completes the drawing, the script waits for `squiggle` to save the final cropped image (`output.png`). Once this file is present, the script launches the Electron **`spatialshot`** application via `npm start`, passing the output image path as an argument for analysis.
 
 ### Usage
 
