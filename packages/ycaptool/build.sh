@@ -7,42 +7,6 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-SPINNER_CHARS="/-\|"
-SPIN_PID=""
-
-show_cursor() { printf "\033[?25h"; }
-hide_cursor() { printf "\033[?25l"; }
-
-trap show_cursor EXIT INT TERM
-
-spinner() {
-    local text="$1"
-    local delay=0.1
-    local i=0
-    hide_cursor
-    while true; do
-        i=$(( (i+1) % 4 ))
-        printf "\r${YELLOW}[${SPINNER_CHARS:$i:1}] ${text}...${NC}  "
-        sleep "$delay"
-    done
-}
-
-start_spinner() {
-    local text="$1"
-    spinner "$text" &
-    SPIN_PID=$!
-    disown $SPIN_PID
-}
-
-stop_spinner() {
-    if [ -n "${SPIN_PID:-}" ]; then
-        kill -9 $SPIN_PID 2>/dev/null || true
-        printf "\r%s\n" "$1"
-    fi
-    SPIN_PID=""
-    show_cursor
-}
-
 # Paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 YCAPTOOL_DIR="$SCRIPT_DIR"
@@ -127,7 +91,7 @@ build_cli() {
     cd "$YCAPTOOL_DIR"
 
     # Build with PyInstaller
-    start_spinner "Building ycap-cli (PyInstaller)"
+    echo -e "${YELLOW}Building ycap-cli (PyInstaller)...${NC}"
     pyinstaller \
         --name="ycap-cli" \
         --onefile \
@@ -141,7 +105,7 @@ build_cli() {
         --log-level WARN \
         "$YCAPTOOL_DIR/cli/ycap-cli.py" 2> /dev/null || true
     PYINSTALLER_EXIT_CODE=$?
-    stop_spinner "✓ PyInstaller build complete"
+    echo -e "${GREEN}✓ PyInstaller build complete${NC}"
 
     if [ $PYINSTALLER_EXIT_CODE -ne 0 ]; then
         echo -e "${RED}Error: PyInstaller command failed (exit code $PYINSTALLER_EXIT_CODE).${NC}"
@@ -200,9 +164,9 @@ build_gui() {
 
     meson setup "$BUILD_DIR_GUI" "$YCAPTOOL_DIR" --buildtype=release
 
-    start_spinner "Compiling ycaptool (meson/ninja)"
+    echo -e "${YELLOW}Compiling ycaptool (meson/ninja)...${NC}"
     meson compile -C "$BUILD_DIR_GUI" -v
-    stop_spinner "✓ ycaptool meson build complete"
+    echo -e "${GREEN}✓ ycaptool meson build complete${NC}"
 
     if [ ! -f "$BUILD_DIR_GUI/ycaptool" ]; then
         echo -e "${RED}Error: Build failed - no binary found at $BUILD_DIR_GUI/ycaptool${NC}"
@@ -222,10 +186,10 @@ if [ $# -eq 0 ]; then
     ACTION="both"
 else
     case "$1" in
-        --cli) ACTION="cli" ;;
-        --gui) ACTION="gui" ;;
-        --clean) ACTION="clean" ;;
-        --help|-h) usage; exit 0 ;;
+        --cli) ACTION="cli" ;; 
+        --gui) ACTION="gui" ;; 
+        --clean) ACTION="clean" ;; 
+        --help|-h) usage; exit 0 ;; 
         *)
             echo -e "${RED}Invalid argument: $1${NC}"
             usage
