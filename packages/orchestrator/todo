@@ -1,0 +1,41 @@
+packages/
+├── orchestrator/
+│   ├── Cargo.toml
+│   └── src/
+│       ├── main.rs
+│       ├── shared.rs
+│       └── platform/
+│           ├── mod.rs
+│           ├── darwin/
+│           │   ├── hm-monitors.sh
+│           │   ├── mod.rs
+│           │   └── sc-grapper.sh
+│           ├── linux/
+│           │   ├── hm-monitors.sh
+│           │   ├── mod.rs
+│           │   └── sc-grapper.sh
+│           └── win32/
+│               ├── hm-monitors.ps1
+│               ├── mod.rs
+│               └── sc-grapper.ps1
+
+let's create real files not examples.
+we need to bundle (emmbed) the scripts with the final standalone binaries.
+
+we need to set affinaty to use CORE0 for monitoring tmp always and CORE1 for running the sequince.
+
+monitoring tmp:
+you should detect the number of tmp items and the detected monitors of hm-monitors then compare them to decide whether the script finshed or not.
+on wayland it will be always one img exist we need to detect that n.png where n is the selected monitor.
+you should detect on.png where n is the squiggled monitor.
+
+windows sequince:
+delete and recreate tmp directory then run sc-grapper.ps1 then start spatialshot-squiggle from cmd if the hm-monitors == tmp ls, then start "spatialshot -- n" from cmd if monitoring detected on.png to launch it on the active display then end the first thread and exit the program.
+
+macos sequince:
+delete and recreate tmp directory then run sc-grapper.sh then open spatialshot-squiggle from terminal if the hm-monitors == tmp ls, then open spatialshot -- n from terminal if monitoring detected on.png to launch it on the active display then end the first thread and exit the program.
+
+linux sequince:
+delete and recreate tmp directory then detect display server,
+if x11 run sc-grapper.sh then run $ spatialshot-squiggle from terminal if the hm-monitors == tmp ls, then run $ spatialshot -- n from terminal if monitoring detected on.png to launch it on the active display then end the first thread and exit the program.
+else if wayland run $ ycaptool from terminal then run $ spatialshot-squiggle -- n where n is n.png at tmp if detected then run $ spatialshot -- n from terminal if monitoring detected on.png to launch it on the active display then end the first thread and exit the program.
