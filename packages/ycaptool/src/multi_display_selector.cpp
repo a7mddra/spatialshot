@@ -16,7 +16,7 @@
 **/
 
 #include "multi_display_selector.h"
-#include "ycap_cli_runner.h"
+#include "capture.h"
 #include <iostream>
 
 MultiDisplaySelector::MultiDisplaySelector() = default;
@@ -54,7 +54,7 @@ void MultiDisplaySelector::apply_action(DisplayWindow *selected_window)
             window->set_opacity(0.0);
             Glib::signal_idle().connect([window]() -> bool
             {
-                run_ycap_cli(window->get_monitor_index() + 1);
+                capture_screen(window->get_monitor_index() + 1);
                 window->hide();
                 window->close();
                 return false; 

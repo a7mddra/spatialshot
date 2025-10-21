@@ -11,17 +11,14 @@
 
 ## Components
 
-The tool is composed of two main parts:
-
-1.  **`ycap-cli` (CLI Tool):** A Python-based command-line tool, packaged with PyInstaller, that handles the backend logic of taking the screenshot. It bundles a version of the Flameshot binary.
-2.  **`ycaptool` (GUI):** A C++ and GTK-based graphical interface that appears when multiple displays are detected, allowing the user to choose which screen to capture.
+The tool is a standalone C++ and GTK-based application, `ycaptool`. It intelligently detects when multiple displays are present and shows a selector GUI. For single-display setups, it proceeds to capture immediately. It bundles the `flameshot` binary, which it uses for the actual screen capture process.
 
 ## Building
 
-To build both the CLI and GUI components, run the `build.sh` script:
+To build the `ycaptool` binary, run the `build.sh` script:
 
 ```bash
-./build.sh # --help
+./build.sh
 ```
 
-This will produce the `ycaptool` and `ycap-cli` binaries in the `bin` directory.
+This will produce the `ycaptool` binary in the `bin` directory.

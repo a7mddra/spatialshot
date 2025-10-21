@@ -15,11 +15,16 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 **/
 
-#ifndef YCAP_CLI_RUNNER_H
-#define YCAP_CLI_RUNNER_H
+#ifndef YCAP_SHELL_H
+#define YCAP_SHELL_H
 
 #include <string>
 
-void run_ycap_cli(int display_number);
+namespace Shell
+{
+    std::string run_and_get_output(const std::string &cmd);
+    int run_silent(const std::string &cmd);
+    bool command_exists(const std::string &cmd_name);
+}
 
-#endif // YCAP_CLI_RUNNER_H
+#endif //YCAP_SHELL_H
