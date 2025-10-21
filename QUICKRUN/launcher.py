@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
 
 """
-                       ♦ SpatialShot Development Launcher ♦
-
-        This script is the primary entry point for developers, designed to simulate
-                    and test the complete application workflow.
-
-       It orchestrates the platform-specific screen capture, the C++/Qt drawing
-          interface, and the final Electron UI panel. This facilitates rapid
-  development and integration testing without requiring the final Rust orchestrator.
-
-          NOTE: Required binaries must first be compiled by running setup.py.
+                   ♦ SpatialShot Development Launcher ♦
+                                     
+          This script is the primary entry point for developers,
+     designed to simulate and test the complete application workflow.
+                                     
+           It orchestrates the platform-specific screen capture,
+      the C++/Qt drawing interface, and the final Electron UI panel.
+        This facilitates rapid development and integration testing
+              without requiring the final Rust orchestrator.
+                                     
+       NOTE: Binaries must be compiled (run setup.py) or downloaded.
+                    HACK: View latest GitHub Release ↴
+          https://github.com/a7mddra/spatialshot/releases/latest
 """
 
 from __future__ import annotations
