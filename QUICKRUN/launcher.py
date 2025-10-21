@@ -1,20 +1,16 @@
 #!/usr/bin/env python3
+
 """
-SpatialShot Development Launcher
-(packages/core/dev/main.py)
+                       ♦ SpatialShot Development Launcher ♦
 
-This script is the primary entry point for developers. It simulates the
-full application flow by orchestrating the various packages:
-1. Detects the environment (OS, Display Server).
-2. Clears the temporary directory.
-3. Runs the platform-specific "freezer" (screenshot) script.
-4. Waits for the screenshot(s) to be created.
-5. Launches the "squiggle" (C++/Qt) drawing application.
-6. Waits for the final "output.png" to be saved.
-7. Launches the "spatialshot" (Electron) UI to display the results.
+        This script is the primary entry point for developers, designed to simulate
+                    and test the complete application workflow.
 
-This allows for rapid development and testing without needing to
-build the final Rust orchestrator.
+       It orchestrates the platform-specific screen capture, the C++/Qt drawing
+          interface, and the final Electron UI panel. This facilitates rapid
+  development and integration testing without requiring the final Rust orchestrator.
+
+          NOTE: Required binaries must first be compiled by running setup.py.
 """
 
 from __future__ import annotations
