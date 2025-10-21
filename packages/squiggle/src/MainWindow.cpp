@@ -26,8 +26,11 @@
 #include <QGraphicsPixmapItem>
 #include <QGraphicsDropShadowEffect>
 
-DrawView::DrawView(const QString& imagePath, QWidget* parent)
-    : QGraphicsView(parent), m_background(imagePath), m_smoothedPoint(0,0) { 
+DrawView::DrawView(int displayNum, const QString& imagePath, QWidget* parent)
+    : QGraphicsView(parent),
+      m_displayNum(displayNum),
+      m_background(imagePath),
+      m_smoothedPoint(0,0) {
     
     m_scene = new QGraphicsScene(this);
     setScene(m_scene);
@@ -68,32 +71,25 @@ void DrawView::mousePressEvent(QMouseEvent* event) {
 
 void DrawView::mouseMoveEvent(QMouseEvent* event) {
     if (!m_isDrawing) return;
-
     
     QPointF currentPoint = mapToScene(event->pos());
-
     QPointF newSmoothedPoint = (m_smoothedPoint * (1.0 - m_smoothingFactor)) + (currentPoint * m_smoothingFactor);
-    
     QPointF midPoint = (m_smoothedPoint + newSmoothedPoint) / 2.0;
     m_path.quadTo(m_smoothedPoint, midPoint);
 
     m_pathItem->setPath(m_path);
-    
     m_smoothedPoint = newSmoothedPoint;
-    
     updateBounds(m_smoothedPoint.x(), m_smoothedPoint.y());
 }
 
 void DrawView::mouseReleaseEvent(QMouseEvent* event) {
     if (event->button() == Qt::LeftButton && m_isDrawing) {
-        
         m_path.lineTo(m_smoothedPoint);
         m_pathItem->setPath(m_path); 
         
         m_isDrawing = false;
         m_hasDrawing = true;
         
-        updateBoundsDisplay();
         cropAndSave();
     }
 }
@@ -115,9 +111,6 @@ void DrawView::updateBounds(qreal x, qreal y) {
     m_maxX = qMax(m_maxX, x + brushRadius);
     m_minY = qMin(m_minY, y - brushRadius);
     m_maxY = qMax(m_maxY, y + brushRadius);
-}
-
-void DrawView::updateBoundsDisplay() {
 }
 
 void DrawView::clearCanvas() {
@@ -149,25 +142,29 @@ void DrawView::cropAndSave() {
         return;
     }
 
-    QString tmpPath = QDir::home().filePath(".config/spatialshot/tmp");
+    QString tmpPath;
 #ifdef Q_OS_WIN
     tmpPath = QDir::home().filePath("AppData/Roaming/spatialshot/tmp");
+#else
+    tmpPath = QDir::home().filePath(".config/spatialshot/tmp");
 #endif
     QDir(tmpPath).mkpath(".");
-    QString outputPath = QDir(tmpPath).filePath("output.png");
+
+    QString outputPath = QDir(tmpPath).filePath(QString("o%1.png").arg(m_displayNum));
 
     QImage cropped = m_background.copy(clampedX, clampedY, clampedWidth, clampedHeight);
     if (!cropped.save(outputPath, "PNG")) {
         qWarning() << "Failed to save cropped image:" << outputPath;
-        QApplication::quit();
-        return;
+    } else {
+        qDebug() << "Cropped image saved to:" << outputPath;
     }
-    qDebug() << "Cropped image saved to:" << outputPath;
+
     QApplication::quit();
 }
 
 MainWindow::MainWindow(int displayNum, const QString& imagePath, QScreen* screen, QWidget* parent)
-    : QMainWindow(parent), m_displayNum(displayNum), m_drawView(new DrawView(imagePath, this)) {
+
+    : QMainWindow(parent), m_displayNum(displayNum), m_drawView(new DrawView(m_displayNum, imagePath, this)) {
     
     setCentralWidget(m_drawView);
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool | Qt::Popup);
@@ -178,14 +175,11 @@ MainWindow::MainWindow(int displayNum, const QString& imagePath, QScreen* screen
 
     #ifdef Q_OS_WIN
     #include <dwmapi.h>
-
-    BOOL attrib = TRUE;
-    DwmSetWindowAttribute((HWND)winId(), DWMWA_TRANSITIONS_FORCEDISABLED, &attrib, sizeof(attrib));
+    DwmSetWindowAttribute(reinterpret_cast<HWND>(winId()), DWMWA_TRANSITIONS_FORCEDISABLED, &attrib, sizeof(attrib));
     #endif
 
     #ifdef Q_OS_MACOS
     #include <Cocoa/Cocoa.h>
-
     NSView *nsview = reinterpret_cast<NSView *>(winId());
     NSWindow *nswindow = [nsview window];
     [nswindow setAnimationBehavior: NSWindowAnimationBehaviorNone];
