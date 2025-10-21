@@ -239,16 +239,15 @@ def run_screenshot_capture(
 
 
 def launch_squiggle(
-    tmp_path: Path,
     monitor_num: Optional[int],
     current_env: str
-) -> Optional[Path]:
+) -> bool:
     """
-    Launches the Squiggle (C++/Qt) application.
+    Launches the Squiggle (C++/Qt) application. Returns True on success.
     """
     if not SQUIGGLE_BINARY.exists():
         logger.error("Squiggle binary not found: %s", SQUIGGLE_BINARY)
-        return None
+        return False
 
     logger.info("Launching Squiggle...")
     command = [str(SQUIGGLE_BINARY)]
@@ -259,15 +258,13 @@ def launch_squiggle(
 
     success, _, _ = _run_process(command, env=custom_env)
     if not success:
-        return None
-
-    output_png = tmp_path / "output.png"
-    if not wait_for_file(output_png, timeout_sec=2):
-        return None
-    return output_png
+        logger.error("Squiggle application failed or was cancelled.")
+        return False
+    
+    return True
 
 
-def launch_electron(output_png: Path) -> bool:
+def launch_electron(output_png: Path, monitor_num: int) -> bool:
     """
     Launches the Electron application in development mode.
     """
@@ -286,13 +283,32 @@ def launch_electron(output_png: Path) -> bool:
         logger.info("Sass build complete.")
 
     logger.info("Starting Electron (npm start) for: %s", output_png.name)
-    command = ["npm", "start", "--", str(output_png)]
+    command = ["npm", "start", "--", str(output_png), f"--monitor={monitor_num}"]
     try:
         subprocess.Popen(command, cwd=ELECTRON_NODE)
         return True
     except Exception as exc:
         logger.error("Failed to start Electron process: %s", exc)
         return False
+
+
+def wait_for_squiggle_output(tmp_path: Path, timeout_sec: int = 5) -> Optional[Tuple[Path, int]]:
+    """
+    Waits for a file matching `o*.png` to appear in the temp directory.
+    """
+    start_time = time.time()
+    logger.info("Waiting for Squiggle output (o*.png)...")
+    while time.time() - start_time < timeout_sec:
+        for f in tmp_path.glob("o*.png"):
+            match = re.search(r"^o(\d+)\.png$", f.name)
+            if match:
+                monitor_num = int(match.group(1))
+                logger.info("Found Squiggle output: %s for monitor %d", f.name, monitor_num)
+                return f, monitor_num
+        time.sleep(0.1)
+    
+    logger.error("Timeout: Squiggle did not produce an output file.")
+    return None
 
 
 # --- Main Orchestrator ---
@@ -323,7 +339,7 @@ def main() -> None:
         png_files = []
         timeout_start = time.time()
         while not png_files and (time.time() - timeout_start < 5):
-            png_files = list(tmp_path.glob("*.png"))
+            png_files = list(f for f in tmp_path.glob("*.png") if not f.name.startswith('o'))
             if not png_files: time.sleep(0.1)
         
         if not png_files:
@@ -343,14 +359,18 @@ def main() -> None:
             
     logger.info("All screenshots captured!")
 
-    output_png = launch_squiggle(tmp_path, monitor_arg_for_squiggle, env)
-    if not output_png:
+    if not launch_squiggle(monitor_arg_for_squiggle, env):
         logger.error("Squiggle capture phase failed.")
         sys.exit(1)
     
-    logger.info("Squiggle capture complete: %s", output_png)
+    output = wait_for_squiggle_output(tmp_path)
+    if not output:
+        sys.exit(1)
+    
+    output_path, ui_monitor_num = output
+    logger.info("Squiggle capture complete: %s", output_path)
 
-    if not launch_electron(output_png):
+    if not launch_electron(output_path, ui_monitor_num):
         logger.error("Failed to launch Electron.")
         sys.exit(1)
 
