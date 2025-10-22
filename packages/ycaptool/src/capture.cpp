@@ -116,7 +116,7 @@ void capture_screen(int display_number)
     dnd_manager.enable_dnd();
 
     const char* home_dir = getenv("HOME");
-    std::string save_path_str = std::string(home_dir ? home_dir : "/tmp") + "/.config/spatialshot/tmp";
+    std::string save_path_str = std::string(home_dir) + "/.cache/spatialshot/tmp";
     Shell::run_silent("mkdir -p " + save_path_str);
     std::string output_file = save_path_str + "/" + std::to_string(display_number) + ".png";
 
