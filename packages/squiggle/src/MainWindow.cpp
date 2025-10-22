@@ -1,18 +1,18 @@
 /**
- *  Copyright (C) 2025  a7mddra-spatialshot
+ * Copyright (C) 2025  a7mddra-spatialshot
  *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 **/
 
 #include "MainWindow.h"
@@ -26,9 +26,17 @@
 #include <QGraphicsPixmapItem>
 #include <QGraphicsDropShadowEffect>
 
-DrawView::DrawView(int displayNum, const QString& imagePath, QWidget* parent)
+#ifdef Q_OS_WIN
+#include <dwmapi.h>
+#endif
+#ifdef Q_OS_MACOS
+#include <Cocoa/Cocoa.h>
+#endif
+
+DrawView::DrawView(int displayNum, const QString& imagePath, const QString& tmpPath, QWidget* parent)
     : QGraphicsView(parent),
       m_displayNum(displayNum),
+      m_tmpPath(tmpPath),
       m_background(imagePath),
       m_smoothedPoint(0,0) {
     
@@ -142,15 +150,7 @@ void DrawView::cropAndSave() {
         return;
     }
 
-    QString tmpPath;
-#ifdef Q_OS_WIN
-    tmpPath = QDir::home().filePath("AppData/Roaming/spatialshot/tmp");
-#else
-    tmpPath = QDir::home().filePath(".config/spatialshot/tmp");
-#endif
-    QDir(tmpPath).mkpath(".");
-
-    QString outputPath = QDir(tmpPath).filePath(QString("o%1.png").arg(m_displayNum));
+    QString outputPath = QDir(m_tmpPath).filePath(QString("o%1.png").arg(m_displayNum));
 
     QImage cropped = m_background.copy(clampedX, clampedY, clampedWidth, clampedHeight);
     if (!cropped.save(outputPath, "PNG")) {
@@ -162,9 +162,10 @@ void DrawView::cropAndSave() {
     QApplication::quit();
 }
 
-MainWindow::MainWindow(int displayNum, const QString& imagePath, QScreen* screen, QWidget* parent)
-
-    : QMainWindow(parent), m_displayNum(displayNum), m_drawView(new DrawView(m_displayNum, imagePath, this)) {
+MainWindow::MainWindow(int displayNum, const QString& imagePath, const QString& tmpPath, QScreen* screen, QWidget* parent)
+    : QMainWindow(parent), 
+      m_displayNum(displayNum), 
+      m_drawView(new DrawView(m_displayNum, imagePath, tmpPath, this)) {
     
     setCentralWidget(m_drawView);
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool | Qt::Popup);
@@ -174,12 +175,11 @@ MainWindow::MainWindow(int displayNum, const QString& imagePath, QScreen* screen
     setGeometry(screen->geometry());
 
     #ifdef Q_OS_WIN
-    #include <dwmapi.h>
+    BOOL attrib = TRUE; 
     DwmSetWindowAttribute(reinterpret_cast<HWND>(winId()), DWMWA_TRANSITIONS_FORCEDISABLED, &attrib, sizeof(attrib));
     #endif
 
     #ifdef Q_OS_MACOS
-    #include <Cocoa/Cocoa.h>
     NSView *nsview = reinterpret_cast<NSView *>(winId());
     NSWindow *nswindow = [nsview window];
     [nswindow setAnimationBehavior: NSWindowAnimationBehaviorNone];
