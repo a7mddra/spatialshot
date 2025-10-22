@@ -19,13 +19,11 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QGraphicsView>
-#include <QGraphicsScene>
-#include <QGraphicsPathItem>
+#include <QWidget>
 #include <QPainterPath>
 #include <QScreen>
 
-class DrawView : public QGraphicsView {
+class DrawView : public QWidget {
     Q_OBJECT
 public:
     explicit DrawView(int displayNum, const QString& imagePath, const QString& tmpPath, QWidget* parent = nullptr);
@@ -35,30 +33,26 @@ protected:
     void mouseMoveEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
-    void resizeEvent(QResizeEvent* event) override;
+    void paintEvent(QPaintEvent* event) override;
 
 private:
     void updateBounds(qreal x, qreal y);
-    void updateBoundsDisplay();
     void clearCanvas();
     void cropAndSave();
 
     int m_displayNum;
     const QString m_tmpPath;
 
-    QGraphicsScene* m_scene;
-    QGraphicsPathItem* m_pathItem = nullptr;
-    QImage m_background; 
+    QImage m_background;
     QPainterPath m_path;
     bool m_isDrawing = false;
     bool m_hasDrawing = false;
     
     QPointF m_smoothedPoint;
-    const qreal m_smoothingFactor = 0.2; 
-
+    const qreal m_smoothingFactor = 0.2;
     qreal m_minX, m_maxX, m_minY, m_maxY;
-    const qreal m_brushSize = 5.0;
-    const qreal m_glowAmount = 10.0;
+    const qreal m_brushSize = 2.0;
+    const qreal m_glowAmount = 5.0;
     const QColor m_brushColor = Qt::white;
 };
 

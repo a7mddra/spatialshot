@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    qDebug() << "Squiggle started. Using tmp path:" << tmpPath;
+    qDebug() << "Spatialshot started. Using tmp path:" << tmpPath;
     qDebug() << "Available displays:";
     for (int i = 0; i < screens.size(); ++i) {
         QScreen* screen = screens[i];

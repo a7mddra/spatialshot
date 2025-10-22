@@ -20,11 +20,8 @@
 #include <QImage>
 #include <QMouseEvent>
 #include <QPainter>
-#include <QProcess>
 #include <QDebug>
 #include <QDir>
-#include <QGraphicsPixmapItem>
-#include <QGraphicsDropShadowEffect>
 
 #ifdef Q_OS_WIN
 #include <dwmapi.h>
@@ -34,22 +31,24 @@
 #endif
 
 DrawView::DrawView(int displayNum, const QString& imagePath, const QString& tmpPath, QWidget* parent)
-    : QGraphicsView(parent),
+    : QWidget(parent),
       m_displayNum(displayNum),
       m_tmpPath(tmpPath),
       m_background(imagePath),
       m_smoothedPoint(0,0) {
     
-    m_scene = new QGraphicsScene(this);
-    setScene(m_scene);
-    m_scene->addPixmap(QPixmap::fromImage(m_background));
+    // Load the image
+    if (m_background.isNull()) {
+        qWarning() << "Failed to load image:" << imagePath;
+        return;
+    }
 
+    // Configure widget for drawing
     setMouseTracking(true);
     setCursor(Qt::CrossCursor);
-    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    setFrameShape(QFrame::NoFrame);
-    
+    setContentsMargins(0, 0, 0, 0);
+    setFixedSize(m_background.size()); // Match image size exactly
+
     clearCanvas();
 }
 
@@ -58,43 +57,30 @@ void DrawView::mousePressEvent(QMouseEvent* event) {
         if (m_hasDrawing) clearCanvas();
         m_isDrawing = true;
         
-        QPointF currentPoint = mapToScene(event->pos());
-        m_smoothedPoint = currentPoint; 
-        
+        m_smoothedPoint = event->pos();
         m_path.moveTo(m_smoothedPoint);
         updateBounds(m_smoothedPoint.x(), m_smoothedPoint.y());
         
-        m_pathItem = new QGraphicsPathItem();
-        m_pathItem->setPen(QPen(m_brushColor, m_brushSize, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-
-        QGraphicsDropShadowEffect* glow = new QGraphicsDropShadowEffect();
-        glow->setBlurRadius(m_glowAmount * 2); 
-        glow->setColor(m_brushColor);
-        glow->setOffset(0, 0); 
-        m_pathItem->setGraphicsEffect(glow);
-
-        m_scene->addItem(m_pathItem);
+        update(); // Trigger repaint
     }
 }
 
 void DrawView::mouseMoveEvent(QMouseEvent* event) {
     if (!m_isDrawing) return;
     
-    QPointF currentPoint = mapToScene(event->pos());
+    QPointF currentPoint = event->pos();
     QPointF newSmoothedPoint = (m_smoothedPoint * (1.0 - m_smoothingFactor)) + (currentPoint * m_smoothingFactor);
     QPointF midPoint = (m_smoothedPoint + newSmoothedPoint) / 2.0;
     m_path.quadTo(m_smoothedPoint, midPoint);
-
-    m_pathItem->setPath(m_path);
+    
     m_smoothedPoint = newSmoothedPoint;
     updateBounds(m_smoothedPoint.x(), m_smoothedPoint.y());
+    update(); // Trigger repaint
 }
 
 void DrawView::mouseReleaseEvent(QMouseEvent* event) {
     if (event->button() == Qt::LeftButton && m_isDrawing) {
         m_path.lineTo(m_smoothedPoint);
-        m_pathItem->setPath(m_path); 
-        
         m_isDrawing = false;
         m_hasDrawing = true;
         
@@ -108,9 +94,33 @@ void DrawView::keyPressEvent(QKeyEvent* event) {
     }
 }
 
-void DrawView::resizeEvent(QResizeEvent* event) {
-    QGraphicsView::resizeEvent(event);
-    fitInView(m_scene->sceneRect(), Qt::IgnoreAspectRatio);
+void DrawView::paintEvent(QPaintEvent* event) {
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+
+    // Draw the background image
+    painter.drawImage(0, 0, m_background);
+
+    // Draw layered glow effect to simulate blur
+    const int glowLayers = 5; // Number of glow layers for smooth fade
+    const qreal maxGlowWidth = m_brushSize + m_glowAmount * 2.0; // Wider glow for diffusion
+    for (int i = glowLayers; i >= 0; --i) {
+        qreal glowWidth = m_brushSize + (m_glowAmount * 2.0 * i / static_cast<qreal>(glowLayers));
+        int alpha = 50 + (150 * (glowLayers - i) / static_cast<qreal>(glowLayers)); // Gradual fade
+        QColor glowColor(Qt::white);
+        glowColor.setAlpha(alpha);
+        QPen glowPen(glowColor, glowWidth, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+        painter.setPen(glowPen);
+        painter.setCompositionMode(QPainter::CompositionMode_Screen); // Luminous glow
+        painter.drawPath(m_path);
+    }
+
+    // Draw the main stroke
+    QPen mainPen(m_brushColor, m_brushSize, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+    mainPen.setColor(Qt::white); // Pure white for core stroke
+    painter.setPen(mainPen);
+    painter.setCompositionMode(QPainter::CompositionMode_SourceOver); // Normal blending for core
+    painter.drawPath(m_path);
 }
 
 void DrawView::updateBounds(qreal x, qreal y) {
@@ -122,11 +132,6 @@ void DrawView::updateBounds(qreal x, qreal y) {
 }
 
 void DrawView::clearCanvas() {
-    if (m_pathItem) {
-        m_scene->removeItem(m_pathItem);
-        delete m_pathItem;
-        m_pathItem = nullptr;
-    }
     m_path = QPainterPath();
     m_isDrawing = false;
     m_hasDrawing = false;
@@ -134,6 +139,7 @@ void DrawView::clearCanvas() {
     m_maxX = 0;
     m_minY = m_background.height();
     m_maxY = 0;
+    update(); // Trigger repaint
 }
 
 void DrawView::cropAndSave() {
@@ -152,8 +158,9 @@ void DrawView::cropAndSave() {
 
     QString outputPath = QDir(m_tmpPath).filePath(QString("o%1.png").arg(m_displayNum));
 
+    // Crop the original background image without the drawing
     QImage cropped = m_background.copy(clampedX, clampedY, clampedWidth, clampedHeight);
-    if (!cropped.save(outputPath, "PNG")) {
+    if (!cropped.save(outputPath, "PNG", 100)) {
         qWarning() << "Failed to save cropped image:" << outputPath;
     } else {
         qDebug() << "Cropped image saved to:" << outputPath;
@@ -173,6 +180,10 @@ MainWindow::MainWindow(int displayNum, const QString& imagePath, const QString& 
     setAttribute(Qt::WA_TranslucentBackground, false);
     setScreen(screen);
     setGeometry(screen->geometry());
+    
+    // Ensure no margins
+    setContentsMargins(0, 0, 0, 0);
+    m_drawView->setContentsMargins(0, 0, 0, 0);
 
     #ifdef Q_OS_WIN
     BOOL attrib = TRUE; 
