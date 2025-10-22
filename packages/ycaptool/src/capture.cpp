@@ -115,8 +115,24 @@ void capture_screen(int display_number)
     audio_manager.mute_audio();
     dnd_manager.enable_dnd();
 
-    const char* home_dir = getenv("HOME");
-    std::string save_path_str = std::string(home_dir) + "/.cache/spatialshot/tmp";
+    std::string cache_base_path;
+    const char* xdg_cache_home = std::getenv("XDG_CACHE_HOME");
+
+    if (xdg_cache_home && xdg_cache_home[0] != '\0') {
+        cache_base_path = xdg_cache_home;
+    } else {
+        const char* home_dir = std::getenv("HOME");
+        if (home_dir && home_dir[0] != '\0') {
+            cache_base_path = std::string(home_dir) + "/.cache";
+        } else {
+            std::cerr << "Error: Cannot find $XDG_CACHE_HOME or $HOME. Unable to determine cache directory." << std::endl;
+            audio_manager.restore_audio();
+            dnd_manager.restore_dnd();
+            return;
+        }
+    }
+
+    std::string save_path_str = cache_base_path + "/spatialshot/tmp";
     Shell::run_silent("mkdir -p " + save_path_str);
     std::string output_file = save_path_str + "/" + std::to_string(display_number) + ".png";
 
