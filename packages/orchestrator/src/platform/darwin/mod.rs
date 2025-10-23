@@ -111,3 +111,10 @@ pub fn run(rx: Receiver<MonitorEvent>, paths: &AppPaths) -> Result<()> {
 
     Ok(())
 }
+
+pub fn kill_running_packages(paths: &AppPaths) {
+    let _ = Command::new("pkill")
+        .arg("-f")
+        .arg(paths.squiggle_bin.to_string_lossy().as_ref())
+        .status();
+}

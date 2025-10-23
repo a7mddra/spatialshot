@@ -20,6 +20,7 @@ use core_affinity;
 use log::{error, LevelFilter};
 use std::sync::mpsc;
 use std::thread;
+use std::time::Duration;
 
 mod platform;
 mod shared;
@@ -37,8 +38,12 @@ fn main() -> Result<()> {
     }
     let monitor_core = core_ids[0];
     let sequence_core = core_ids.get(1).copied().unwrap_or(monitor_core);
+    let display_monitor_core = core_ids.get(2).copied().unwrap_or(monitor_core);
 
     let paths = shared::find_app_paths().context("Failed to determine application paths")?;
+
+    let initial_count = platform::get_monitor_count()
+        .context("Failed to get initial monitor count")?;
 
     let (tx, rx) = mpsc::channel::<shared::MonitorEvent>();
 
@@ -56,23 +61,14 @@ fn main() -> Result<()> {
             let expected_monitors = if is_wayland {
                 1
             } else {
-                match platform::get_monitor_count() {
-                    Ok(count) => count,
-                    Err(e) => {
-                        error!(
-                            "[MONITOR] Failed to get monitor count: {:?}. Defaulting to 1.",
-                            e
-                        );
-                        1
-                    }
-                }
+                initial_count
             };
             shared::monitor_tmp_directory(tx, monitor_paths, is_wayland, expected_monitors);
         })
         .context("Failed to spawn monitor thread")?;
 
     let sequence_paths = paths.clone();
-    let sequence_handle = thread::Builder::new()
+    let _sequence_handle = thread::Builder::new()
         .name("sequence_thread".into())
         .spawn(move || -> Result<()> {
             if !core_affinity::set_for_current(sequence_core) {
@@ -85,7 +81,21 @@ fn main() -> Result<()> {
         })
         .context("Failed to spawn sequence thread")?;
 
-    match sequence_handle.join() {
+    let display_monitor_paths = paths.clone();
+    let _display_monitor_handle = thread::Builder::new()
+        .name("display_monitor_thread".into())
+        .spawn(move || {
+            if !core_affinity::set_for_current(display_monitor_core) {
+                error!(
+                    "[DISPLAY_MON] Failed to pin display monitor thread to core {:?}",
+                    display_monitor_core
+                );
+            }
+            monitor_display_changes(initial_count, &display_monitor_paths);
+        })
+        .context("Failed to spawn display monitor thread")?;
+
+    match _sequence_handle.join() {
         Ok(Ok(())) => Ok(()),
         Ok(Err(e)) => {
             error!("Orchestration failed: {:?}", e);
@@ -102,5 +112,21 @@ fn main() -> Result<()> {
             error!("Critical error: {}", msg);
             anyhow::bail!("Sequence thread panicked.")
         }
+    }
+}
+
+fn monitor_display_changes(initial_count: u32, paths: &shared::AppPaths) {
+    loop {
+        match platform::get_monitor_count() {
+            Ok(current_count) => {
+                if current_count != initial_count {
+                    error!("[DISPLAY_MON] Monitor count changed from {} to {}. Shutting down.", initial_count, current_count);
+                    let _ = platform::kill_running_packages(paths);
+                    std::process::exit(1);
+                }
+            }
+            Err(e) => error!("[DISPLAY_MON] Failed to get monitor count: {:?}", e),
+        }
+        thread::sleep(Duration::from_secs(1));
     }
 }

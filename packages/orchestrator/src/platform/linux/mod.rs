@@ -111,3 +111,17 @@ pub fn run(rx: Receiver<MonitorEvent>, paths: &AppPaths) -> Result<()> {
 
     Ok(())
 }
+
+pub fn kill_running_packages(paths: &AppPaths) {
+    let _ = Command::new("pkill")
+        .arg("-f")
+        .arg(paths.squiggle_bin.to_string_lossy().as_ref())
+        .status();
+
+    #[cfg(target_os = "linux")]
+    let ycaptool_path = paths.bin_dir.join("ycaptool");
+    let _ = Command::new("pkill")
+        .arg("-f")
+        .arg(ycaptool_path.to_string_lossy().as_ref())
+        .status();
+}

@@ -18,17 +18,17 @@
 #[cfg(target_os = "linux")]
 mod linux;
 #[cfg(target_os = "linux")]
-pub use self::linux::{get_monitor_count, run};
+pub use self::linux::{get_monitor_count, kill_running_packages, run};
 
 #[cfg(target_os = "windows")]
 mod win32;
 #[cfg(target_os = "windows")]
-pub use self::win32::{get_monitor_count, run};
+pub use self::win32::{get_monitor_count, kill_running_packages, run};
 
 #[cfg(target_os = "macos")]
 mod darwin;
 #[cfg(target_os = "macos")]
-pub use self::darwin::{get_monitor_count, run};
+pub use self::darwin::{get_monitor_count, kill_running_packages, run};
 
 #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
 pub fn run(
@@ -41,6 +41,8 @@ pub fn run(
 pub fn get_monitor_count() -> anyhow::Result<u32> {
     Ok(1)
 }
+#[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
+pub fn kill_running_packages(_paths: &crate::shared::AppPaths) {}
 
 #[cfg(target_os = "linux")]
 pub fn is_wayland() -> bool {

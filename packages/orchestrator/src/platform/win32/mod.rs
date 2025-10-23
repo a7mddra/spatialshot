@@ -111,3 +111,9 @@ pub fn run(rx: Receiver<MonitorEvent>, paths: &AppPaths) -> Result<()> {
 
     Ok(())
 }
+
+pub fn kill_running_packages(paths: &AppPaths) {
+    let _ = Command::new("taskkill")
+        .args(&["/IM", paths.squiggle_bin.file_name().unwrap().to_str().unwrap(), "/F"])
+        .status();
+}
