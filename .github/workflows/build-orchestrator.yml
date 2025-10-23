@@ -1,4 +1,4 @@
-name: Build Rust Orchestrator
+name: Build Orchestrator
 
 on:
   push:
@@ -19,17 +19,14 @@ jobs:
             target: x86_64-unknown-linux-gnu
             artifact-name: spatialshot-orchestrator-linux-x86_64
             archive-ext: tar.gz
-            archive-cmd: tar -czf ${{ matrix.artifact-name }}.${{ matrix.archive-ext }} -C dist .
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact-name: spatialshot-orchestrator-windows-x86_64
             archive-ext: zip
-            archive-cmd: Compress-Archive -Path dist/* -DestinationPath ${{ matrix.artifact-name }}.${{ matrix.archive-ext }}
           - os: macos-latest
             target: x86_64-apple-darwin
             artifact-name: spatialshot-orchestrator-macos-x86_64
             archive-ext: tar.gz
-            archive-cmd: tar -czf ${{ matrix.artifact-name }}.${{ matrix.archive-ext }} -C dist .
 
     steps:
       - name: Checkout code
@@ -48,20 +45,41 @@ jobs:
         run: cargo build --release --target ${{ matrix.target }}
         working-directory: packages/orchestrator
 
-      - name: Package binary and scripts
-        shell: ${{ matrix.os == 'windows-latest' && 'pwsh' || 'bash' }}
+      - name: Prepare dist directory (all OS)
+        shell: bash
         run: |
           mkdir -p dist
-          cp target/${{ matrix.target }}/release/spatialshot-orchestrator${{ matrix.os == 'windows-latest' && '.exe' || '' }} dist/
-          # Bundle scripts (adjust paths; these are examples from your src)
-          cp packages/orchestrator/src/platform/linux/hm-monitors.sh dist/ || true  # Linux-specific, ignore if not exist
+          cp target/${{ matrix.target }}/release/spatialshot-orchestrator${{ contains(matrix.os, 'windows') && '.exe' || '' }} dist/
+
+      - name: Bundle scripts and archive (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          # Bundle Linux-specific scripts
+          cp packages/orchestrator/src/platform/linux/hm-monitors.sh dist/ || true
           cp packages/orchestrator/src/platform/linux/sc-grabber.sh dist/ || true
-          cp packages/orchestrator/src/platform/win32/hm-monitors.ps1 dist/ || true
-          cp packages/orchestrator/src/platform/win32/sc-grabber.ps1 dist/ || true
+          # Create single tar.gz
+          tar -czf ${{ matrix.artifact-name }}.${{ matrix.archive-ext }} -C dist .
+
+      - name: Bundle scripts and archive (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          # Bundle Windows-specific scripts
+          Copy-Item packages/orchestrator/src/platform/win32/hm-monitors.ps1 dist/ -ErrorAction SilentlyContinue
+          Copy-Item packages/orchestrator/src/platform/win32/sc-grabber.ps1 dist/ -ErrorAction SilentlyContinue
+          # Create single zip
+          Compress-Archive -Path dist/* -DestinationPath ${{ matrix.artifact-name }}.${{ matrix.archive-ext }}
+
+      - name: Bundle scripts and archive (macOS)
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          # Bundle macOS-specific scripts
           cp packages/orchestrator/src/platform/darwin/hm-monitors.sh dist/ || true
           cp packages/orchestrator/src/platform/darwin/sc-grabber.sh dist/ || true
-          # Run archive command
-          ${{ matrix.archive-cmd }}
+          # Create single tar.gz
+          tar -czf ${{ matrix.artifact-name }}.${{ matrix.archive-ext }} -C dist .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
