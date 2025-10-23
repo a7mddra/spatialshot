@@ -22,6 +22,7 @@
 #include <QPainter>
 #include <QDebug>
 #include <QDir>
+#include <QConicalGradient>
 
 #ifdef Q_OS_WIN
 #include <dwmapi.h>
@@ -35,7 +36,10 @@ DrawView::DrawView(int displayNum, const QString& imagePath, const QString& tmpP
       m_displayNum(displayNum),
       m_tmpPath(tmpPath),
       m_background(imagePath),
-      m_smoothedPoint(0,0) {
+      m_smoothedPoint(0,0),
+      m_currentMousePos(0,0),
+      m_gradientOpacity(0.0),
+      m_animation(nullptr) {
     
     // Load the image
     if (m_background.isNull()) {
@@ -49,7 +53,27 @@ DrawView::DrawView(int displayNum, const QString& imagePath, const QString& tmpP
     setContentsMargins(0, 0, 0, 0);
     setFixedSize(m_background.size()); // Match image size exactly
 
+    // Setup animation
+    m_animation = new QPropertyAnimation(this, "gradientOpacity");
+    m_animation->setDuration(200); // Very quick fade, adjust as needed
+    m_animation->setStartValue(0.0);
+    m_animation->setEndValue(1.0);
+
     clearCanvas();
+}
+
+void DrawView::showEvent(QShowEvent* event) {
+    QWidget::showEvent(event);
+    m_animation->start();
+}
+
+qreal DrawView::gradientOpacity() const {
+    return m_gradientOpacity;
+}
+
+void DrawView::setGradientOpacity(qreal opacity) {
+    m_gradientOpacity = opacity;
+    update();
 }
 
 void DrawView::mousePressEvent(QMouseEvent* event) {
@@ -58,6 +82,7 @@ void DrawView::mousePressEvent(QMouseEvent* event) {
         m_isDrawing = true;
         
         m_smoothedPoint = event->pos();
+        m_currentMousePos = event->pos();
         m_path.moveTo(m_smoothedPoint);
         updateBounds(m_smoothedPoint.x(), m_smoothedPoint.y());
         
@@ -66,7 +91,13 @@ void DrawView::mousePressEvent(QMouseEvent* event) {
 }
 
 void DrawView::mouseMoveEvent(QMouseEvent* event) {
-    if (!m_isDrawing) return;
+    // Always update current mouse position for cursor drawing
+    m_currentMousePos = event->pos();
+    
+    if (!m_isDrawing) {
+        update(); // Update cursor position even when not drawing
+        return;
+    }
     
     QPointF currentPoint = event->pos();
     QPointF newSmoothedPoint = (m_smoothedPoint * (1.0 - m_smoothingFactor)) + (currentPoint * m_smoothingFactor);
@@ -101,6 +132,13 @@ void DrawView::paintEvent(QPaintEvent* event) {
     // Draw the background image
     painter.drawImage(0, 0, m_background);
 
+    // Apply gradient overlay for low brightness (darker at top to normal at bottom)
+    QLinearGradient gradient(0, 0, 0, height());
+    gradient.setColorAt(0.0, QColor(0, 0, 0, static_cast<int>(128 * m_gradientOpacity))); // Darker at top (adjust alpha for intensity, e.g., 128 for moderate darkening)
+    gradient.setColorAt(1.0, QColor(0, 0, 0, 0));  // Normal brightness at bottom
+    painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+    painter.fillRect(rect(), gradient);
+
     // Draw layered glow effect to simulate blur
     const int glowLayers = 5; // Number of glow layers for smooth fade
     const qreal maxGlowWidth = m_brushSize + m_glowAmount * 2.0; // Wider glow for diffusion
@@ -121,6 +159,66 @@ void DrawView::paintEvent(QPaintEvent* event) {
     painter.setPen(mainPen);
     painter.setCompositionMode(QPainter::CompositionMode_SourceOver); // Normal blending for core
     painter.drawPath(m_path);
+
+    // Draw the cursor circle when drawing
+    if (m_isDrawing) {
+        drawCursorCircle(painter, m_currentMousePos);
+    }
+}
+
+void DrawView::drawCursorCircle(QPainter& painter, const QPointF& center) {
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    
+    const qreal circleRadius = 28.0;
+    const qreal glowRadius = 10;
+    
+    const int glowLayers = 8;
+    
+    for (int i = glowLayers; i > 0; --i) {
+        qreal currentRadius = glowRadius * (i / static_cast<qreal>(glowLayers));
+        qreal opacity = 70 * (i / static_cast<qreal>(glowLayers));
+        
+        QConicalGradient gradient(center, -90);
+        gradient.setColorAt(0.0, QColor(76, 88, 91, opacity));
+        gradient.setColorAt(0.25, QColor(126, 153, 163, opacity));
+        gradient.setColorAt(0.5, QColor(165, 191, 204, opacity));
+        gradient.setColorAt(0.75, QColor(244, 237, 211, opacity));
+        gradient.setColorAt(1.0, QColor(76, 88, 91, opacity));
+        
+        QPen glowPen;
+        glowPen.setBrush(QBrush(gradient));
+        glowPen.setWidthF(currentRadius * 2.0);
+        glowPen.setCapStyle(Qt::RoundCap);
+        
+        painter.setPen(glowPen);
+        painter.setCompositionMode(QPainter::CompositionMode_Screen);
+        painter.drawPoint(center);
+    }
+    
+    // Layer 2: Subtle outer glow halo
+    QRadialGradient haloGradient(center, glowRadius);
+    haloGradient.setColorAt(0.0, QColor(255, 255, 255, 0));
+    haloGradient.setColorAt(0.7, QColor(200, 220, 255, 40));
+    haloGradient.setColorAt(1.0, QColor(150, 180, 255, 0));
+    
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(QBrush(haloGradient));
+    painter.setCompositionMode(QPainter::CompositionMode_Plus);
+    painter.drawEllipse(center, glowRadius, glowRadius);
+
+    // Layer 3: Solid white core
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(Qt::white);
+    painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+    painter.drawEllipse(center, circleRadius / 2, circleRadius / 2);
+    
+    // Layer 4: Very subtle inner glow
+    QRadialGradient innerGlow(center, circleRadius);
+    innerGlow.setColorAt(0.0, QColor(255, 255, 255, 150));
+    innerGlow.setColorAt(1.0, QColor(255, 255, 255, 0));
+    
+    painter.setBrush(QBrush(innerGlow));
+    painter.drawEllipse(center, circleRadius, circleRadius);
 }
 
 void DrawView::updateBounds(qreal x, qreal y) {
