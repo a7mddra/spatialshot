@@ -19,7 +19,7 @@
 #include "capture.h"
 #include <iostream>
 
-MultiDisplaySelector::MultiDisplaySelector() = default;
+MultiDisplaySelector::MultiDisplaySelector() : m_capture_successful(false) {}
 
 void MultiDisplaySelector::run()
 {
@@ -52,12 +52,16 @@ void MultiDisplaySelector::apply_action(DisplayWindow *selected_window)
         if (window == selected_window)
         {
             window->set_opacity(0.0);
-            Glib::signal_idle().connect([window]() -> bool
+            Glib::signal_idle().connect([this, window]() -> bool
             {
                 capture_screen(window->get_monitor_index() + 1);
-                window->hide();
-                window->close();
-                return false; 
+                m_capture_successful = true;
+                Glib::signal_timeout().connect([]() -> bool
+                {
+                    Gtk::Main::quit();
+                    return false;
+                }, 10);
+                return false;
             });
         }
         else
@@ -77,11 +81,15 @@ void MultiDisplaySelector::apply_action(DisplayWindow *selected_window)
     }, 10);
 }
 
-void MultiDisplaySelector::quit_normally()
+void MultiDisplaySelector::quit_with_error()
 {
     for (auto window : m_windows)
     {
         window->close();
     }
-    Gtk::Main::quit();
+    if (m_capture_successful) {
+        Gtk::Main::quit();
+    } else {
+        exit(1);
+    }
 }

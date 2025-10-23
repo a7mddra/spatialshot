@@ -31,6 +31,7 @@ DisplayWindow::DisplayWindow(int monitor_index, const Gdk::Rectangle &geometry, 
 
     m_event_box.add_events(Gdk::BUTTON_PRESS_MASK | Gdk::BUTTON_RELEASE_MASK | Gdk::POINTER_MOTION_MASK);
     m_event_box.signal_button_press_event().connect(sigc::mem_fun(*this, &DisplayWindow::on_button_press));
+    signal_delete_event().connect(sigc::mem_fun(*this, &DisplayWindow::on_delete_event));
     add(m_event_box);
 
     auto outer = Gtk::make_managed<Gtk::Box>(Gtk::ORIENTATION_VERTICAL, 0);
@@ -155,10 +156,16 @@ bool DisplayWindow::on_button_press(GdkEventButton *event)
 
 void DisplayWindow::on_cancel_clicked()
 {
-    m_selector->quit_normally();
+    m_selector->quit_with_error();
 }
 
 void DisplayWindow::on_select_clicked()
 {
     m_selector->apply_action(this);
+}
+
+bool DisplayWindow::on_delete_event(GdkEventAny* event)
+{
+    m_selector->quit_with_error();
+    return true;
 }

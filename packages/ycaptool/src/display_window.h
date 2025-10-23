@@ -32,6 +32,7 @@ protected:
     bool on_button_press(GdkEventButton *event);
     void on_cancel_clicked();
     void on_select_clicked();
+    bool on_delete_event(GdkEventAny* event);
 
 private:
     void apply_css();

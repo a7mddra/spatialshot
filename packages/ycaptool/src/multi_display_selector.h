@@ -27,10 +27,11 @@ public:
     MultiDisplaySelector();
     void run();
     void apply_action(DisplayWindow *selected_window);
-    void quit_normally();
+    void quit_with_error();
 
 private:
     std::vector<DisplayWindow *> m_windows;
+    bool m_capture_successful;
 };
 
 #endif // MULTI_DISPLAY_SELECTOR_H
