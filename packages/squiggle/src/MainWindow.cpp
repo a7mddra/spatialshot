@@ -41,21 +41,18 @@ DrawView::DrawView(int displayNum, const QString& imagePath, const QString& tmpP
       m_gradientOpacity(0.0),
       m_animation(nullptr) {
     
-    // Load the image
     if (m_background.isNull()) {
         qWarning() << "Failed to load image:" << imagePath;
         return;
     }
 
-    // Configure widget for drawing
     setMouseTracking(true);
     setCursor(Qt::CrossCursor);
     setContentsMargins(0, 0, 0, 0);
-    setFixedSize(m_background.size()); // Match image size exactly
+    setFixedSize(m_background.size());
 
-    // Setup animation
     m_animation = new QPropertyAnimation(this, "gradientOpacity");
-    m_animation->setDuration(200); // Very quick fade, adjust as needed
+    m_animation->setDuration(200);
     m_animation->setStartValue(0.0);
     m_animation->setEndValue(1.0);
 
@@ -86,16 +83,15 @@ void DrawView::mousePressEvent(QMouseEvent* event) {
         m_path.moveTo(m_smoothedPoint);
         updateBounds(m_smoothedPoint.x(), m_smoothedPoint.y());
         
-        update(); // Trigger repaint
+        update();
     }
 }
 
 void DrawView::mouseMoveEvent(QMouseEvent* event) {
-    // Always update current mouse position for cursor drawing
     m_currentMousePos = event->pos();
     
     if (!m_isDrawing) {
-        update(); // Update cursor position even when not drawing
+        update();
         return;
     }
     
@@ -106,7 +102,7 @@ void DrawView::mouseMoveEvent(QMouseEvent* event) {
     
     m_smoothedPoint = newSmoothedPoint;
     updateBounds(m_smoothedPoint.x(), m_smoothedPoint.y());
-    update(); // Trigger repaint
+    update();
 }
 
 void DrawView::mouseReleaseEvent(QMouseEvent* event) {
@@ -129,38 +125,33 @@ void DrawView::paintEvent(QPaintEvent* event) {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // Draw the background image
     painter.drawImage(0, 0, m_background);
 
-    // Apply gradient overlay for low brightness (darker at top to normal at bottom)
     QLinearGradient gradient(0, 0, 0, height());
-    gradient.setColorAt(0.0, QColor(0, 0, 0, static_cast<int>(128 * m_gradientOpacity))); // Darker at top (adjust alpha for intensity, e.g., 128 for moderate darkening)
-    gradient.setColorAt(1.0, QColor(0, 0, 0, 0));  // Normal brightness at bottom
+    gradient.setColorAt(0.0, QColor(0, 0, 0, static_cast<int>(128 * m_gradientOpacity)));
+    gradient.setColorAt(1.0, QColor(0, 0, 0, 0));
     painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
     painter.fillRect(rect(), gradient);
 
-    // Draw layered glow effect to simulate blur
-    const int glowLayers = 5; // Number of glow layers for smooth fade
-    const qreal maxGlowWidth = m_brushSize + m_glowAmount * 2.0; // Wider glow for diffusion
+    const int glowLayers = 5;
+    const qreal maxGlowWidth = m_brushSize + m_glowAmount * 2.0;
     for (int i = glowLayers; i >= 0; --i) {
         qreal glowWidth = m_brushSize + (m_glowAmount * 2.0 * i / static_cast<qreal>(glowLayers));
-        int alpha = 50 + (150 * (glowLayers - i) / static_cast<qreal>(glowLayers)); // Gradual fade
+        int alpha = 50 + (150 * (glowLayers - i) / static_cast<qreal>(glowLayers));
         QColor glowColor(Qt::white);
         glowColor.setAlpha(alpha);
         QPen glowPen(glowColor, glowWidth, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
         painter.setPen(glowPen);
-        painter.setCompositionMode(QPainter::CompositionMode_Screen); // Luminous glow
+        painter.setCompositionMode(QPainter::CompositionMode_Screen);
         painter.drawPath(m_path);
     }
 
-    // Draw the main stroke
     QPen mainPen(m_brushColor, m_brushSize, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-    mainPen.setColor(Qt::white); // Pure white for core stroke
+    mainPen.setColor(Qt::white);
     painter.setPen(mainPen);
-    painter.setCompositionMode(QPainter::CompositionMode_SourceOver); // Normal blending for core
+    painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
     painter.drawPath(m_path);
 
-    // Draw the cursor circle when drawing
     if (m_isDrawing) {
         drawCursorCircle(painter, m_currentMousePos);
     }
@@ -195,7 +186,6 @@ void DrawView::drawCursorCircle(QPainter& painter, const QPointF& center) {
         painter.drawPoint(center);
     }
     
-    // Layer 2: Subtle outer glow halo
     QRadialGradient haloGradient(center, glowRadius);
     haloGradient.setColorAt(0.0, QColor(255, 255, 255, 0));
     haloGradient.setColorAt(0.7, QColor(200, 220, 255, 40));
@@ -206,13 +196,11 @@ void DrawView::drawCursorCircle(QPainter& painter, const QPointF& center) {
     painter.setCompositionMode(QPainter::CompositionMode_Plus);
     painter.drawEllipse(center, glowRadius, glowRadius);
 
-    // Layer 3: Solid white core
     painter.setPen(Qt::NoPen);
     painter.setBrush(Qt::white);
     painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
     painter.drawEllipse(center, circleRadius / 2, circleRadius / 2);
     
-    // Layer 4: Very subtle inner glow
     QRadialGradient innerGlow(center, circleRadius);
     innerGlow.setColorAt(0.0, QColor(255, 255, 255, 150));
     innerGlow.setColorAt(1.0, QColor(255, 255, 255, 0));
@@ -237,7 +225,7 @@ void DrawView::clearCanvas() {
     m_maxX = 0;
     m_minY = m_background.height();
     m_maxY = 0;
-    update(); // Trigger repaint
+    update();
 }
 
 void DrawView::cropAndSave() {
@@ -256,7 +244,6 @@ void DrawView::cropAndSave() {
 
     QString outputPath = QDir(m_tmpPath).filePath(QString("o%1.png").arg(m_displayNum));
 
-    // Crop the original background image without the drawing
     QImage cropped = m_background.copy(clampedX, clampedY, clampedWidth, clampedHeight);
     if (!cropped.save(outputPath, "PNG", 100)) {
         qWarning() << "Failed to save cropped image:" << outputPath;
@@ -279,7 +266,6 @@ MainWindow::MainWindow(int displayNum, const QString& imagePath, const QString& 
     setScreen(screen);
     setGeometry(screen->geometry());
     
-    // Ensure no margins
     setContentsMargins(0, 0, 0, 0);
     m_drawView->setContentsMargins(0, 0, 0, 0);
 
