@@ -23,6 +23,7 @@
 #include <QPainterPath>
 #include <QScreen>
 #include <QPropertyAnimation>
+#include <QCloseEvent>
 
 class DrawView : public QWidget {
     Q_OBJECT
@@ -74,6 +75,10 @@ class MainWindow : public QMainWindow {
 public:
     MainWindow(int displayNum, const QString& imagePath, const QString& tmpPath, QScreen* screen, QWidget* parent = nullptr);
     int displayNumber() const { return m_displayNum; }
+
+protected:
+    void closeEvent(QCloseEvent *event) override;
+    
 private:
     int m_displayNum;
     DrawView* m_drawView;

@@ -17,7 +17,6 @@
 
 #include "MainWindow.h"
 #include <QApplication>
-#include <QCommandLineParser>
 #include <QScreen>
 #include <QDir>
 #include <QDebug>
@@ -34,14 +33,6 @@ int main(int argc, char *argv[]) {
     app.setApplicationName("spatialshot");
     app.setOrganizationName("spatialshot"); 
     app.setApplicationVersion("1.0.0");
-
-    QCommandLineParser parser;
-    parser.addHelpOption();
-    parser.addVersionOption();
-    parser.addPositionalArgument("monitor", "Monitor number (optional, e.g., -- 2)", "[-- monitor]");
-    parser.process(app);
-    const QStringList args = parser.positionalArguments();
-    int monitorArg = args.isEmpty() ? -1 : args.first().toInt();
 
     QString tmpPath;
     QString cacheBase;
@@ -69,26 +60,14 @@ int main(int argc, char *argv[]) {
     }
 
     const QList<QScreen*> screens = QGuiApplication::screens();
-    QMap<int, int> monitorMapping; 
-    int monitorNumber = 1;
     QScreen* primaryScreen = QGuiApplication::primaryScreen();
-    int primaryIndex = primaryScreen ? screens.indexOf(primaryScreen) : 0;
-    if (primaryIndex < 0) primaryIndex = 0;
-
-    monitorMapping[primaryIndex] = monitorNumber++;
-
-    for (int i = 0; i < screens.size(); ++i) {
-        if (i != primaryIndex) {
-            monitorMapping[i] = monitorNumber++;
-        }
-    }
 
     qDebug() << "Spatialshot started. Using tmp path:" << tmpPath;
     qDebug() << "Available displays:";
     for (int i = 0; i < screens.size(); ++i) {
         QScreen* screen = screens[i];
         qDebug() << QString("  Display %1 (Qt Index %2): %3, bounds: %4x%5+%6+%7, primary: %8")
-                    .arg(monitorMapping.value(i, -1))
+                    .arg(i + 1)
                     .arg(i)
                     .arg(screen->name().isEmpty() ? "Unnamed" : screen->name())
                     .arg(screen->geometry().width())
@@ -98,28 +77,10 @@ int main(int argc, char *argv[]) {
                     .arg(screen == primaryScreen);
     }
 
-    QList<int> targetQtIndexes;
-    if (monitorArg > 0 && monitorMapping.values().contains(monitorArg)) {
-        int qtIndex = monitorMapping.key(monitorArg, -1);
-        if (qtIndex >= 0 && qtIndex < screens.size()) {
-             qDebug() << "Targeting specific monitor number:" << monitorArg << "(Qt Index" << qtIndex << ")";
-            targetQtIndexes.append(qtIndex);
-        } else {
-            qWarning() << "Invalid monitor number requested:" << monitorArg << ", falling back to primary.";
-            targetQtIndexes.append(primaryIndex);
-        }
-    } else {
-        qDebug() << "Targeting all available monitors.";
-        for(int i = 0; i < screens.size(); ++i) {
-            targetQtIndexes.append(i);
-        }
-    }
-
     QList<MainWindow*> windows;
-    for (int qtIndex : targetQtIndexes) {
-        QScreen* screen = screens[qtIndex];
-        int currentMonitorNum = monitorMapping.value(qtIndex, -1);
-        if (currentMonitorNum < 1) continue;
+    for (int i = 0; i < screens.size(); ++i) {
+        QScreen* screen = screens[i];
+        int currentMonitorNum = i + 1;
 
         QString imagePath = QDir(tmpPath).filePath(QString("%1.png").arg(currentMonitorNum));
         if (!QFileInfo::exists(imagePath)) {
@@ -127,7 +88,7 @@ int main(int argc, char *argv[]) {
             continue;
         }
 
-        qDebug() << "Creating window for monitor" << currentMonitorNum << "(Qt Index" << qtIndex << ") with image" << imagePath;
+        qDebug() << "Creating window for monitor" << currentMonitorNum << "(Qt Index" << i << ") with image" << imagePath;
         
         MainWindow* win = new MainWindow(currentMonitorNum, imagePath, tmpPath, screen); 
         

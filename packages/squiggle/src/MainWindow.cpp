@@ -23,6 +23,7 @@
 #include <QDebug>
 #include <QDir>
 #include <QConicalGradient>
+#include <QCloseEvent>
 
 #ifdef Q_OS_WIN
 #include <dwmapi.h>
@@ -117,7 +118,7 @@ void DrawView::mouseReleaseEvent(QMouseEvent* event) {
 
 void DrawView::keyPressEvent(QKeyEvent* event) {
     if (event->key() == Qt::Key_Escape || event->key() == Qt::Key_Q) {
-        QApplication::quit();
+        QApplication::exit(1);
     }
 }
 
@@ -238,7 +239,7 @@ void DrawView::cropAndSave() {
 
     if (clampedWidth <= 0 || clampedHeight <= 0) {
         qWarning() << "Invalid crop dimensions, quitting without save";
-        QApplication::quit();
+        QApplication::exit(1);
         return;
     }
 
@@ -247,11 +248,11 @@ void DrawView::cropAndSave() {
     QImage cropped = m_background.copy(clampedX, clampedY, clampedWidth, clampedHeight);
     if (!cropped.save(outputPath, "PNG", 100)) {
         qWarning() << "Failed to save cropped image:" << outputPath;
+        QApplication::exit(1);
     } else {
         qDebug() << "Cropped image saved to:" << outputPath;
+        QApplication::exit(0);
     }
-
-    QApplication::quit();
 }
 
 MainWindow::MainWindow(int displayNum, const QString& imagePath, const QString& tmpPath, QScreen* screen, QWidget* parent)
@@ -281,4 +282,10 @@ MainWindow::MainWindow(int displayNum, const QString& imagePath, const QString& 
     #endif
 
     showFullScreen();
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    QApplication::exit(1);
+    QMainWindow::closeEvent(event);
 }
