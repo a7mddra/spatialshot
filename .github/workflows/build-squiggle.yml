@@ -1,105 +1,105 @@
-name: Build Squiggle (Linux)
+# name: Build Squiggle (Linux)
 
-on:
-  push:
-    branches: [ "main" ]
-    paths:
-      - 'packages/squiggle/**'
-  pull_request:
-    paths:
-      - 'packages/squiggle/**'
+# on:
+#   push:
+#     branches: [ "main" ]
+#     paths:
+#       - 'packages/squiggle/**'
+#   pull_request:
+#     paths:
+#       - 'packages/squiggle/**'
 
-jobs:
-  build-linux:
-    runs-on: ubuntu-latest
+# jobs:
+#   build-linux:
+#     runs-on: ubuntu-latest
 
-    steps:
-      - name: Install Qt Build Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential libgl1-mesa-dev libssl-dev ninja-build python3 libxkbcommon-x11-dev libxcb-icccm4-dev libxcb-image0-dev libxcb-keysyms1-dev libxcb-render-util0-dev libxcb-xinerama0-dev libxcb-xfixes0-dev libxcb-shape0-dev
+#     steps:
+#       - name: Install Qt Build Dependencies
+#         run: |
+#           sudo apt-get update
+#           sudo apt-get install -y build-essential libgl1-mesa-dev libssl-dev ninja-build python3 libxkbcommon-x11-dev libxcb-icccm4-dev libxcb-image0-dev libxcb-keysyms1-dev libxcb-render-util0-dev libxcb-xinerama0-dev libxcb-xfixes0-dev libxcb-shape0-dev
 
-      - name: Cache Qt Static Build
-        id: cache-qt-static
-        uses: actions/cache@v4
-        with:
-          path: /opt/qt6-static
-          key: qt-static-build-${{ runner.os }}-qt-6.6.0
+#       - name: Cache Qt Static Build
+#         id: cache-qt-static
+#         uses: actions/cache@v4
+#         with:
+#           path: /opt/qt6-static
+#           key: qt-static-build-${{ runner.os }}-qt-6.6.0
 
-      - name: Build Static Qt from Source
-        if: steps.cache-qt-static.outputs.cache-hit != 'true'
-        run: |
-          QT_VERSION=6.6.0
-          wget https://download.qt.io/official_releases/qt/6.6/${QT_VERSION}/single/qt-everywhere-src-${QT_VERSION}.tar.xz
-          tar -xf qt-everywhere-src-${QT_VERSION}.tar.xz
-          cd qt-everywhere-src-${QT_VERSION}
-          ./configure -static -release \
-            -prefix "/opt/qt6-static" \
-            -qt-host-path "/opt/qt6-host" \
-            -no-opengl \
-            -skip qt3d \
-            -skip qt5compat \
-            -skip qtactiveqt \
-            -skip qtcharts \
-            -skip qtcoap \
-            -skip qtconnectivity \
-            -skip qtdatavis3d \
-            -skip qtdoc \
-            -skip qtgrpc \
-            -skip qthttpserver \
-            -skip qtimageformats \
-            -skip qtlanguageserver \
-            -skip qtlocation \
-            -skip qtlottie \
-            -skip qtmqtt \
-            -skip qtmultimedia \
-            -skip qtnetworkauth \
-            -skip qtopcua \
-            -skip qtpositioning \
-            -skip qtquick3d \
-            -skip qtquicktimeline \
-            -skip qtremoteobjects \
-            -skip qtscxml \
-            -skip qtsensors \
-            -skip qtserialbus \
-            -skip qtserialport \
-            -skip qtspeech \
-            -skip qtsvg \
-            -skip qttools \
-            -skip qttranslations \
-            -skip qtvirtualkeyboard \
-            -skip qtwayland \
-            -skip qtwebchannel \
-            -skip qtwebengine \
-            -skip qtwebsockets \
-            -skip qtwebview \
-            -nomake examples \
-            -nomake tests \
-            -confirm-license
-          cmake --build . --parallel
-          cmake --install .
+#       - name: Build Static Qt from Source
+#         if: steps.cache-qt-static.outputs.cache-hit != 'true'
+#         run: |
+#           QT_VERSION=6.6.0
+#           wget https://download.qt.io/official_releases/qt/6.6/${QT_VERSION}/single/qt-everywhere-src-${QT_VERSION}.tar.xz
+#           tar -xf qt-everywhere-src-${QT_VERSION}.tar.xz
+#           cd qt-everywhere-src-${QT_VERSION}
+#           ./configure -static -release \
+#             -prefix "/opt/qt6-static" \
+#             -qt-host-path "/opt/qt6-host" \
+#             -no-opengl \
+#             -skip qt3d \
+#             -skip qt5compat \
+#             -skip qtactiveqt \
+#             -skip qtcharts \
+#             -skip qtcoap \
+#             -skip qtconnectivity \
+#             -skip qtdatavis3d \
+#             -skip qtdoc \
+#             -skip qtgrpc \
+#             -skip qthttpserver \
+#             -skip qtimageformats \
+#             -skip qtlanguageserver \
+#             -skip qtlocation \
+#             -skip qtlottie \
+#             -skip qtmqtt \
+#             -skip qtmultimedia \
+#             -skip qtnetworkauth \
+#             -skip qtopcua \
+#             -skip qtpositioning \
+#             -skip qtquick3d \
+#             -skip qtquicktimeline \
+#             -skip qtremoteobjects \
+#             -skip qtscxml \
+#             -skip qtsensors \
+#             -skip qtserialbus \
+#             -skip qtserialport \
+#             -skip qtspeech \
+#             -skip qtsvg \
+#             -skip qttools \
+#             -skip qttranslations \
+#             -skip qtvirtualkeyboard \
+#             -skip qtwayland \
+#             -skip qtwebchannel \
+#             -skip qtwebengine \
+#             -skip qtwebsockets \
+#             -skip qtwebview \
+#             -nomake examples \
+#             -nomake tests \
+#             -confirm-license
+#           cmake --build . --parallel
+#           cmake --install .
 
-      - name: Checkout repository
-        uses: actions/checkout@v4
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
 
-      - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: squiggle-linux-${{ github.ref }}-${{ github.sha }}
-          restore-keys: |
-            squiggle-linux-${{ github.ref }}
-            squiggle-linux-
+#       - name: Setup ccache
+#         uses: hendrikmuhs/ccache-action@v1.2
+#         with:
+#           key: squiggle-linux-${{ github.ref }}-${{ github.sha }}
+#           restore-keys: |
+#             squiggle-linux-${{ github.ref }}
+#             squiggle-linux-
 
-      - name: Build Squiggle
-        env:
-          CMAKE_PREFIX_PATH: /opt/qt6-static
-          CC: /usr/lib/ccache/gcc
-          CXX: /usr/lib/ccache/g++
-        run: |
-          python3 packages/squiggle/build.py
+#       - name: Build Squiggle
+#         env:
+#           CMAKE_PREFIX_PATH: /opt/qt6-static
+#           CC: /usr/lib/ccache/gcc
+#           CXX: /usr/lib/ccache/g++
+#         run: |
+#           python3 packages/squiggle/build.py
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: spatialshot-squiggle-linux
-          path: packages/squiggle/dist/spatialshot-squiggle
+#       - name: Upload Artifact
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: spatialshot-squiggle-linux
+#           path: packages/squiggle/dist/spatialshot-squiggle
