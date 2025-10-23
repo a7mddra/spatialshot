@@ -1,94 +1,109 @@
 name: Build Orchestrator
 
 on:
+  # Run on pushes and PRs to main
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
+  # Run when a new release is created
   release:
-    types: [created]
+    types: [ created ]
 
 jobs:
   build:
+    # Run this job on the OS specified in the matrix
     runs-on: ${{ matrix.os }}
+    
     strategy:
+      # Don't cancel all jobs if one fails
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
         include:
+          # --- Linux x86_64 ---
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             artifact-name: spatialshot-orchestrator-linux-x86_64
             archive-ext: tar.gz
+            binary-name: spatialshot-orchestrator
+            
+          # --- Windows x86_64 ---
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact-name: spatialshot-orchestrator-windows-x86_64
             archive-ext: zip
-          - os: macos-latest
+            binary-name: spatialshot-orchestrator.exe
+            
+          # --- macOS x86_64 (Intel) ---
+          # We use macos-12 because it's an x86_64 runner,
+          # which matches the x86_64-apple-darwin target.
+          # macos-latest is ARM64 and would require cross-compiling.
+          - os: macos-12 
             target: x86_64-apple-darwin
             artifact-name: spatialshot-orchestrator-macos-x86_64
             archive-ext: tar.gz
+            binary-name: spatialshot-orchestrator
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Rust
+      - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
           target: ${{ matrix.target }}
 
       - name: Cache Cargo dependencies
+        # Use Swatinem/rust-cache for faster builds
         uses: Swatinem/rust-cache@v2
 
       - name: Build release binary
+        # Build the Rust binary in release mode
+        # The 'profile.release' settings in Cargo.toml will be applied
         run: cargo build --release --target ${{ matrix.target }}
         working-directory: packages/orchestrator
 
-      - name: Prepare dist directory (all OS)
+      - name: Prepare artifact directory
         shell: bash
         run: |
+          # Create a staging directory
           mkdir -p dist
-          cp target/${{ matrix.target }}/release/spatialshot-orchestrator${{ contains(matrix.os, 'windows') && '.exe' || '' }} dist/
+          
+          # Copy the final binary into the staging directory
+          cp packages/orchestrator/target/${{ matrix.target }}/release/${{ matrix.binary-name }} dist/
 
-      - name: Bundle scripts and archive (Linux)
-        if: matrix.os == 'ubuntu-latest'
+      - name: Archive artifact (Linux/macOS)
+        # Only run this step on non-Windows runners
+        if: runner.os != 'Windows'
         shell: bash
         run: |
-          # Bundle Linux-specific scripts
-          cp packages/orchestrator/src/platform/linux/hm-monitors.sh dist/ || true
-          cp packages/orchestrator/src/platform/linux/sc-grabber.sh dist/ || true
-          # Create single tar.gz
+          # Create a tar.gz archive
+          # -C dist: Change to the 'dist' directory before archiving
+          # .: Archive all files in that directory
+          # This ensures the binary is at the root of the archive
           tar -czf ${{ matrix.artifact-name }}.${{ matrix.archive-ext }} -C dist .
-
-      - name: Bundle scripts and archive (Windows)
-        if: matrix.os == 'windows-latest'
+        
+      - name: Archive artifact (Windows)
+        # Only run this step on the Windows runner
+        if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          # Bundle Windows-specific scripts
-          Copy-Item packages/orchestrator/src/platform/win32/hm-monitors.ps1 dist/ -ErrorAction SilentlyContinue
-          Copy-Item packages/orchestrator/src/platform/win32/sc-grabber.ps1 dist/ -ErrorAction SilentlyContinue
-          # Create single zip
+          # Create a .zip archive
           Compress-Archive -Path dist/* -DestinationPath ${{ matrix.artifact-name }}.${{ matrix.archive-ext }}
 
-      - name: Bundle scripts and archive (macOS)
-        if: matrix.os == 'macos-latest'
-        shell: bash
-        run: |
-          # Bundle macOS-specific scripts
-          cp packages/orchestrator/src/platform/darwin/hm-monitors.sh dist/ || true
-          cp packages/orchestrator/src/platform/darwin/sc-grabber.sh dist/ || true
-          # Create single tar.gz
-          tar -czf ${{ matrix.artifact-name }}.${{ matrix.archive-ext }} -C dist .
-
-      - name: Upload artifact
+      - name: Upload build artifact
+        # Upload the archive as an artifact for this workflow run
+        # This is useful for PRs and testing
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact-name }}
           path: ${{ matrix.artifact-name }}.${{ matrix.archive-ext }}
 
-      - name: Upload to release (on tag)
+      - name: Upload to GitHub Release
+        # Only run this step if the trigger was a 'release' event
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
+          # Upload the final archive file to the release page
           files: ${{ matrix.artifact-name }}.${{ matrix.archive-ext }}
