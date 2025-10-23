@@ -7,9 +7,9 @@ PRJKT_ROOT = Path(__file__).resolve().parent.parent.parent
 
 class TestOrchestrator:
     @pytest.mark.parametrize("env,script_path,expected_count", [
-        ("win32", PRJKT_ROOT / "platform/win32/sc-grapper.ps1", 2),
-        ("darwin", PRJKT_ROOT / "platform/darwin/sc-grapper.sh", 2),
-        ("x11", PRJKT_ROOT / "platform/linux/sc-grapper.sh", 2),
+        ("win32", PRJKT_ROOT / "platform/win32/sc-grabber.ps1", 2),
+        ("darwin", PRJKT_ROOT / "platform/darwin/sc-grabber.sh", 2),
+        ("x11", PRJKT_ROOT / "platform/linux/sc-grabber.sh", 2),
         ("wayland", PRJKT_ROOT / "packages/ycaptool/bin/ycaptool", 1),
     ])
     def test_run_screenshot_capture(
