@@ -26,7 +26,7 @@ use std::time::Duration;
 
 #[derive(Debug)]
 pub enum MonitorEvent {
-    ScreenshotsReady(Option<u32>),
+    ScreenshotsReady,
     SquiggleFinished { output_path: PathBuf },
     Error(String),
 }
@@ -205,9 +205,9 @@ pub fn monitor_tmp_directory(
 
                 if is_wayland {
                     if !png_files.is_empty() {
-                        let monitor_num = png_files[0].0;
+
                         if tx
-                            .send(MonitorEvent::ScreenshotsReady(Some(monitor_num)))
+                            .send(MonitorEvent::ScreenshotsReady)
                             .is_ok()
                         {
                             screenshot_event_sent = true;
@@ -227,7 +227,7 @@ pub fn monitor_tmp_directory(
                             (1..=expected_monitors).all(|i| found_monitors.contains(&i));
 
                         if all_present {
-                            if tx.send(MonitorEvent::ScreenshotsReady(None)).is_ok() {
+                            if tx.send(MonitorEvent::ScreenshotsReady).is_ok() {
                                 screenshot_event_sent = true;
                                 break;
                             } else {

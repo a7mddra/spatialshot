@@ -58,26 +58,7 @@ pub fn run(rx: Receiver<MonitorEvent>, paths: &AppPaths) -> Result<()> {
     )
     .context("Failed to run sc-grabber.sh")?;
 
-    let squiggle_monitor_arg: Option<u32>;
-    match rx
-        .recv_timeout(Duration::from_secs(10))
-        .context("Timeout or error waiting for screenshots from monitor thread")?
-    {
-        MonitorEvent::ScreenshotsReady(wayland_monitor_num_opt) => {
-            squiggle_monitor_arg = wayland_monitor_num_opt;
-        }
-        MonitorEvent::Error(e) => {
-            error!(
-                "Monitor thread reported error during screenshot wait: {}",
-                e
-            );
-            anyhow::bail!("Monitor thread error: {}", e);
-        }
-        ev => anyhow::bail!(
-            "Received unexpected event while waiting for screenshots: {:?}",
-            ev
-        ),
-    }
+
 
     if !paths.squiggle_bin.exists() {
         error!(
@@ -87,18 +68,9 @@ pub fn run(rx: Receiver<MonitorEvent>, paths: &AppPaths) -> Result<()> {
         anyhow::bail!("Squiggle binary not found.");
     }
 
-    let mut squiggle_args_os: Vec<String> = Vec::new();
-    if let Some(monitor_num) = squiggle_monitor_arg {
-        squiggle_args_os.push("--".to_string());
-        squiggle_args_os.push(monitor_num.to_string());
-    }
-
     run_command(
         &paths.squiggle_bin,
-        &squiggle_args_os
-            .iter()
-            .map(|s| s.as_str())
-            .collect::<Vec<_>>(),
+        &[],
         None,
         None,
     )
