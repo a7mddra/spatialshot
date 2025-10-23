@@ -17,7 +17,7 @@
                       │                                  │                        │                      │
                       ▼                                  ▼                        ▼                      ▼
                ┌──────────────┐                 ┌───────────────────┐   ┌───────────────────┐  ┌────────────────────┐
-               │   ycaptool   │                 │ Run sc-grapper.sh │   │ Run sc-grapper.sh │  │ Run sc-grapper.ps1 │
+               │   ycaptool   │                 │ Run sc-grabber.sh │   │ Run sc-grabber.sh │  │ Run sc-grabber.ps1 │
                └──────────────┘                 │ (scrot + xrandr)  │   │  (screencapture)  │  │   (nircmd.exe)     │
                       │                         └───────────────────┘   └───────────────────┘  └────────────────────┘
           ┌───────────┴───────────┐                      │                        │                      │

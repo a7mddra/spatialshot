@@ -48,9 +48,9 @@ SQUIGGLE_BINARY_NAME = f"spatialshot-squiggle{SQUIGGLE_BINARY_EXT}"
 SQUIGGLE_BINARY = PKGS_PATH / "squiggle" / "dist" / SQUIGGLE_BINARY_NAME
 ELECTRON_NODE = PKGS_PATH / "spatialshot"
 
-SC_GRAPPER_WIN = PLATFORM_PATH / "windows" / "sc-grapper.ps1"
-SC_GRAPPER_MAC = PLATFORM_PATH / "darwin" / "sc-grapper.sh"
-SC_GRAPPER_X11 = PLATFORM_PATH / "linux" / "sc-grapper.sh"
+SC_grabber_WIN = PLATFORM_PATH / "windows" / "sc-grabber.ps1"
+SC_grabber_MAC = PLATFORM_PATH / "darwin" / "sc-grabber.sh"
+SC_grabber_X11 = PLATFORM_PATH / "linux" / "sc-grabber.sh"
 HM_MONITORS_WIN = PLATFORM_PATH / "windows" / "hm-monitors.ps1"
 HM_MONITORS_MAC = PLATFORM_PATH / "darwin" / "hm-monitors.sh"
 HM_MONITORS_LINUX = PLATFORM_PATH / "linux" / "hm-monitors.sh"
@@ -204,26 +204,26 @@ def run_screenshot_capture(
     """
     if env == "win32":
         logger.info("Initiating capture: Windows")
-        if not SC_GRAPPER_WIN.exists():
-            logger.error("Windows capture script missing: %s", SC_GRAPPER_WIN)
+        if not SC_grabber_WIN.exists():
+            logger.error("Windows capture script missing: %s", SC_grabber_WIN)
             return False, 0
-        success, _, _ = _run_process(["powershell", "-ExecutionPolicy", "Bypass", "-File", str(SC_GRAPPER_WIN)])
+        success, _, _ = _run_process(["powershell", "-ExecutionPolicy", "Bypass", "-File", str(SC_grabber_WIN)])
         return success, monitor_count
 
     elif env == "darwin":
         logger.info("Initiating capture: macOS")
-        if not SC_GRAPPER_MAC.exists():
-            logger.error("macOS capture script missing: %s", SC_GRAPPER_MAC)
+        if not SC_grabber_MAC.exists():
+            logger.error("macOS capture script missing: %s", SC_grabber_MAC)
             return False, 0
-        success, _, _ = _run_process(["/bin/bash", str(SC_GRAPPER_MAC)])
+        success, _, _ = _run_process(["/bin/bash", str(SC_grabber_MAC)])
         return success, monitor_count
 
     elif env == "x11":
         logger.info("Initiating capture: Linux (X11)")
-        if not SC_GRAPPER_X11.exists():
-            logger.error("X11 capture script missing: %s", SC_GRAPPER_X11)
+        if not SC_grabber_X11.exists():
+            logger.error("X11 capture script missing: %s", SC_grabber_X11)
             return False, 0
-        success, _, _ = _run_process(["/bin/bash", str(SC_GRAPPER_X11)])
+        success, _, _ = _run_process(["/bin/bash", str(SC_grabber_X11)])
         return success, monitor_count
 
     elif env == "wayland":
