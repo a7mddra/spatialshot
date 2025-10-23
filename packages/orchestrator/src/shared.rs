@@ -1,79 +1,172 @@
 /**
- *  Copyright (C) 2025  a7mddra-spatialshot
+ * Copyright (C) 2025  a7mddra-spatialshot
  *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 **/
 
+use anyhow::{bail, Context, Result};
+use log::error;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::Sender;
 use std::thread;
 use std::time::Duration;
-use anyhow::{Context, Result};
 
 #[derive(Debug)]
 pub enum MonitorEvent {
-    ScreenshotsReady(Vec<u32>),
-    SquiggleFinished(u32),
+    ScreenshotsReady(Option<u32>),
+    SquiggleFinished { output_path: PathBuf },
+    Error(String),
 }
 
-#[derive(Debug)]
-pub struct ProjectPaths {
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct AppPaths {
+    pub data_dir: PathBuf,
+    pub cache_dir: PathBuf,
     pub tmp_dir: PathBuf,
+    pub bin_dir: PathBuf,
+    pub electron_app_dir: PathBuf,
+    pub electron_exe: PathBuf,
     pub squiggle_bin: PathBuf,
-    pub ycaptool_bin: PathBuf,
-    pub spatialshot_dir: PathBuf,
 }
 
-pub fn clear_tmp(tmp_path: &Path) -> Result<()> {
-    if tmp_path.exists() {
-        fs::remove_dir_all(tmp_path)
-            .with_context(|| format!("Failed to remove tmp directory at {:?}", tmp_path))?;
+pub fn find_app_paths() -> Result<AppPaths> {
+    let data_dir: PathBuf;
+    let cache_dir: PathBuf;
+
+    if cfg!(target_os = "windows") {
+        data_dir = dirs::data_local_dir()
+            .context("Could not find local app data directory (%LOCALAPPDATA%)")?
+            .join("spatialshot");
+        cache_dir = data_dir.clone();
+    } else if cfg!(target_os = "macos") {
+        data_dir = dirs::data_local_dir()
+            .context("Could not find local data directory (~/Library/Application Support)")?
+            .join("spatialshot");
+        cache_dir = dirs::cache_dir()
+            .context("Could not find cache directory (~/Library/Caches)")?
+            .join("spatialshot");
+    } else {
+        data_dir = dirs::data_local_dir()
+            .context("Could not find local data directory (~/.local/share)")?
+            .join("spatialshot");
+        cache_dir = dirs::cache_dir()
+            .context("Could not find cache directory (~/.cache)")?
+            .join("spatialshot");
     }
-    fs::create_dir_all(tmp_path)
-        .with_context(|| format!("Failed to create tmp directory at {:?}", tmp_path))?;
-    println!("[INFO] Cleared and recreated tmp directory: {:?}", tmp_path);
-    Ok(())
+
+    let tmp_dir = cache_dir.join("tmp");
+    let bin_dir = data_dir.join("bin");
+    let electron_app_dir = data_dir.join("app");
+
+    let electron_exe_name = if cfg!(target_os = "windows") {
+        "spatialshot.exe"
+    } else {
+        "spatialshot"
+    };
+    let electron_exe = electron_app_dir.join(electron_exe_name);
+
+    let squiggle_bin_name = if cfg!(target_os = "windows") {
+        "spatialshot-squiggle.exe"
+    } else {
+        "spatialshot-squiggle"
+    };
+    let squiggle_bin = bin_dir.join(squiggle_bin_name);
+
+    fs::create_dir_all(&data_dir).context("Failed to create data directory")?;
+    fs::create_dir_all(&cache_dir).context("Failed to create cache directory")?;
+    fs::create_dir_all(&bin_dir).context("Failed to create bin directory")?;
+
+    Ok(AppPaths {
+        data_dir,
+        cache_dir,
+        tmp_dir,
+        bin_dir,
+        electron_app_dir,
+        electron_exe,
+        squiggle_bin,
+    })
 }
 
-pub fn run_command(mut command: Command) -> Result<()> {
-    let status = command.status()?;
-    if !status.success() {
-        anyhow::bail!("Command failed with status: {}", status);
+pub fn run_command(
+    program: &Path,
+    args: &[&str],
+    cwd: Option<&Path>,
+    envs: Option<&[(&str, &str)]>,
+) -> Result<()> {
+    let mut command = Command::new(program);
+    command.args(args);
+    if let Some(dir) = cwd {
+        command.current_dir(dir);
     }
-    Ok(())
-}
+    if let Some(e) = envs {
+        command.envs(e.iter().copied());
+    }
 
-pub fn spawn_command(mut command: Command) -> Result<()> {
+    command.stdin(Stdio::null());
     command.stdout(Stdio::null());
     command.stderr(Stdio::null());
-    command.spawn()?;
+
+    let status = command
+        .status()
+        .with_context(|| format!("Failed to execute command: {}", program.display()))?;
+
+    if !status.success() {
+        error!(
+            "Command failed: '{}' with status: {}",
+            program.display(),
+            status
+        );
+        bail!("Command failed: {}", program.display());
+    }
     Ok(())
 }
 
-fn find_squiggle_output(tmp_dir: &Path) -> Option<u32> {
+pub fn spawn_command(
+    program: &Path,
+    args: &[&str],
+    cwd: Option<&Path>,
+    envs: Option<&[(&str, &str)]>,
+) -> Result<()> {
+    let mut command = Command::new(program);
+    command.args(args);
+    if let Some(dir) = cwd {
+        command.current_dir(dir);
+    }
+    if let Some(e) = envs {
+        command.envs(e.iter().copied());
+    }
+
+    command.stdin(Stdio::null());
+    command.stdout(Stdio::null());
+    command.stderr(Stdio::null());
+
+    command
+        .spawn()
+        .with_context(|| format!("Failed to spawn command: {}", program.display()))?;
+    Ok(())
+}
+
+fn find_squiggle_output(tmp_dir: &Path) -> Option<PathBuf> {
     if let Ok(entries) = fs::read_dir(tmp_dir) {
         for entry in entries.filter_map(Result::ok) {
             let path = entry.path();
             if let Some(file_name) = path.file_name().and_then(|s| s.to_str()) {
                 if file_name.starts_with('o') && file_name.ends_with(".png") {
-                    if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
-                        if let Ok(monitor_num) = stem[1..].parse::<u32>() {
-                            return Some(monitor_num);
-                        }
-                    }
+                    return Some(path);
                 }
             }
         }
@@ -81,47 +174,105 @@ fn find_squiggle_output(tmp_dir: &Path) -> Option<u32> {
     None
 }
 
-pub fn monitor_tmp_directory(tx: Sender<MonitorEvent>, paths: ProjectPaths, is_wayland: bool, expected_monitors: u32) {
-    println!("[MONITOR] Started on core {:?}", core_affinity::get_core_ids().unwrap()[0]);
+pub fn monitor_tmp_directory(
+    tx: Sender<MonitorEvent>,
+    paths: AppPaths,
+    is_wayland: bool,
+    expected_monitors: u32,
+) {
+    let start_time = std::time::Instant::now();
+    let timeout = Duration::from_secs(10);
+    let mut screenshot_event_sent = false;
 
-    // --- Phase 1: Wait for initial screenshots ---
-    loop {
-        if let Ok(entries) = fs::read_dir(&paths.tmp_dir) {
-            let png_files: Vec<PathBuf> = entries
-                .filter_map(Result::ok)
-                .map(|e| e.path())
-                .filter(|p| p.extension().and_then(|s| s.to_str()) == Some("png") && p.file_stem().unwrap() != "output")
-                .collect();
+    while start_time.elapsed() < timeout {
+        match fs::read_dir(&paths.tmp_dir) {
+            Ok(entries) => {
+                let png_files: Vec<(u32, PathBuf)> = entries
+                    .filter_map(Result::ok)
+                    .map(|e| e.path())
+                    .filter(|p| p.extension().and_then(|s| s.to_str()) == Some("png"))
+                    .filter_map(|p| {
+                        if let Some(stem) = p.file_stem().and_then(|s| s.to_str()) {
+                            if !stem.starts_with('o') {
+                                if let Ok(num) = stem.parse::<u32>() {
+                                    return Some((num, p));
+                                }
+                            }
+                        }
+                        None
+                    })
+                    .collect();
 
-            if is_wayland {
-                if !png_files.is_empty() {
-                    let file_name = png_files[0].file_stem().unwrap().to_str().unwrap();
-                    if let Ok(monitor_num) = file_name.parse::<u32>() {
-                        println!("[MONITOR] Wayland capture found for monitor {}", monitor_num);
-                        tx.send(MonitorEvent::ScreenshotsReady(vec![monitor_num])).unwrap();
-                        break;
+                if is_wayland {
+                    if !png_files.is_empty() {
+                        let monitor_num = png_files[0].0;
+                        if tx
+                            .send(MonitorEvent::ScreenshotsReady(Some(monitor_num)))
+                            .is_ok()
+                        {
+                            screenshot_event_sent = true;
+                            break;
+                        } else {
+                            error!("[MONITOR] Channel closed while sending ScreenshotsReady (Wayland).");
+                            return;
+                        }
+                    }
+                } else {
+                    if png_files.len() >= expected_monitors as usize {
+                        let mut found_monitors = std::collections::HashSet::new();
+                        for (num, _) in &png_files {
+                            found_monitors.insert(*num);
+                        }
+                        let all_present =
+                            (1..=expected_monitors).all(|i| found_monitors.contains(&i));
+
+                        if all_present {
+                            if tx.send(MonitorEvent::ScreenshotsReady(None)).is_ok() {
+                                screenshot_event_sent = true;
+                                break;
+                            } else {
+                                error!("[MONITOR] Channel closed while sending ScreenshotsReady (X11/Other).");
+                                return;
+                            }
+                        }
                     }
                 }
-            } else {
-                if png_files.len() >= expected_monitors as usize {
-                    println!("[MONITOR] All {} screenshots found.", expected_monitors);
-                    tx.send(MonitorEvent::ScreenshotsReady(Vec::new())).unwrap();
-                    break;
-                }
+            }
+            Err(e) => {
+                error!("[MONITOR] Error reading tmp dir: {}", e);
             }
         }
         thread::sleep(Duration::from_millis(100));
     }
 
-    // --- Phase 2: Wait for squiggle's output (o*.png) ---
-    loop {
-        if let Some(monitor_num) = find_squiggle_output(&paths.tmp_dir) {
-            println!("[MONITOR] Squiggle finished. Output found for monitor {}", monitor_num);
-            tx.send(MonitorEvent::SquiggleFinished(monitor_num)).unwrap();
-            break;
-        }
-        thread::sleep(Duration::from_millis(100));
+    if !screenshot_event_sent {
+        error!("[MONITOR] Timeout waiting for screenshots.");
+        let _ = tx.send(MonitorEvent::Error(
+            "Timeout waiting for screenshots.".to_string(),
+        ));
+        return;
     }
 
-    println!("[MONITOR] Finished. Exiting monitor thread.");
+    let start_time_squiggle = std::time::Instant::now();
+    let timeout_squiggle = Duration::from_secs(60 * 5);
+
+    while start_time_squiggle.elapsed() < timeout_squiggle {
+        if let Some(output_path) = find_squiggle_output(&paths.tmp_dir) {
+            if tx
+                .send(MonitorEvent::SquiggleFinished { output_path })
+                .is_ok()
+            {
+                return;
+            } else {
+                error!("[MONITOR] Channel closed while sending SquiggleFinished.");
+                return;
+            }
+        }
+        thread::sleep(Duration::from_millis(200));
+    }
+
+    error!("[MONITOR] Timeout waiting for squiggle output (o*.png).");
+    let _ = tx.send(MonitorEvent::Error(
+        "Timeout waiting for squiggle output.".to_string(),
+    ));
 }

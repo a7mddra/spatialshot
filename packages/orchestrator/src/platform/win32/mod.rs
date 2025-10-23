@@ -1,83 +1,131 @@
 /**
- *  Copyright (C) 2025  a7mddra-spatialshot
+ * Copyright (C) 2025  a7mddra-spatialshot
  *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 **/
 
-use std::process::Command;
-use std::sync::mpsc::Receiver;
+use crate::shared::{run_command, spawn_command, AppPaths, MonitorEvent};
 use anyhow::{Context, Result};
-use crate::shared::{run_command, spawn_command, MonitorEvent, ProjectPaths};
+use log::error;
+use std::{path::PathBuf, process::Command, sync::mpsc::Receiver, time::Duration};
 
-const GRABBER_SCRIPT: &str = include_str!("sc-grapper.ps1");
-const MONITOR_SCRIPT: &str = include_str!("hm-monitors.ps1");
+const SC_GRABBER_SCRIPT: &str = include_str!("sc-grabber.ps1");
+const HM_MONITORS_SCRIPT: &str = include_str!("hm-monitors.ps1");
 
-/// The main sequence for Windows.
-pub fn run(rx: Receiver<MonitorEvent>, paths: &ProjectPaths) -> Result<()> {
-    // Step 1: Run Screen Grabber
-    println!("[SEQ] Running sc-grapper.ps1...");
-    run_command(
-        Command::new("powershell.exe")
-            .arg("-ExecutionPolicy").arg("Bypass")
-            .arg("-Command").arg(GRABBER_SCRIPT)
-    ).context("Failed to execute sc-grapper.ps1.")?;
-
-    // Step 2: Wait for screenshots
-    println!("[SEQ] Waiting for screenshots...");
-    match rx.recv()? {
-        MonitorEvent::ScreenshotsReady(_) => {
-            println!("[SEQ] Screenshots ready. Proceeding to launch squiggle.");
-        },
-        _ => anyhow::bail!("Received unexpected event while waiting for screenshots."),
-    }
-
-    // Step 3: Launch Squiggle
-    println!("[SEQ] Launching squiggle...");
-    run_command(Command::new(&paths.squiggle_bin))
-        .context("Failed to execute squiggle.")?;
-
-    // Step 4: Wait for squiggle finish
-    println!("[SEQ] Waiting for squiggle to finish...");
-    let ui_monitor;
-    match rx.recv()? {
-        MonitorEvent::SquiggleFinished(monitor_num) => {
-            ui_monitor = monitor_num;
-            println!("[SEQ] Squiggle finished. Launching UI on monitor {}.", ui_monitor);
-        },
-        _ => anyhow::bail!("Received unexpected event while waiting for squiggle output."),
-    }
-
-    // Step 5: Launch SpatialShot UI
-    println!("[SEQ] Launching spatialshot UI...");
-    // On Windows, `npm` is often `npm.cmd`, so we use cmd /c to be safe.
-    let mut ui_cmd = Command::new("cmd.exe");
-    ui_cmd.current_dir(&paths.spatialshot_dir)
-          .arg("/c")
-          .arg("npm")
-          .arg("start")
-          .arg("--")
-          .arg(paths.tmp_dir.join("output.png"))
-          .arg(format!("--monitor={}", ui_monitor));
-    
-    spawn_command(ui_cmd).context("Failed to spawn spatialshot UI.")?;
-
-    Ok(())
+fn get_powershell_exe() -> PathBuf {
+    PathBuf::from("powershell.exe")
 }
 
 pub fn get_monitor_count() -> Result<u32> {
-    let output = Command::new("powershell.exe").arg("-Command").arg(MONITOR_SCRIPT).output()?;
-    let count_str = String::from_utf8(output.stdout)?.trim().to_string();
-    let count = count_str.parse::<u32>()?;
-    Ok(count)
+    let output = Command::new(get_powershell_exe())
+        .arg("-Command") 
+        .arg(HM_MONITORS_SCRIPT)
+        .stdin(std::process::Stdio::null())
+        .output()
+        .context("Failed to execute hm-monitors.ps1 script")?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        error!(
+            "hm-monitors.ps1 failed with status {:?}: {}",
+            output.status.code(),
+            stderr
+        );
+        anyhow::bail!("hm-monitors.ps1 script failed.");
+    }
+
+    let count_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    let count = count_str
+        .parse::<u32>()
+        .with_context(|| format!("Failed to parse monitor count output: '{}'", count_str))?;
+
+    Ok(count.max(1))
+}
+
+
+pub fn run(rx: Receiver<MonitorEvent>, paths: &AppPaths) -> Result<()> {
+
+    run_command(
+        &get_powershell_exe(),
+        &["-Command", SC_GRABBER_SCRIPT],
+        None,
+        None,
+    )
+    .context("Failed to run sc-grabber.ps1")?;
+
+    let squiggle_monitor_arg: Option<u32>;
+    match rx.recv_timeout(Duration::from_secs(10))
+        .context("Timeout or error waiting for screenshots from monitor thread")?
+    {
+        MonitorEvent::ScreenshotsReady(wayland_monitor_num_opt) => {
+             squiggle_monitor_arg = wayland_monitor_num_opt;
+        }
+        MonitorEvent::Error(e) => {
+            error!("Monitor thread reported error during screenshot wait: {}", e);
+            anyhow::bail!("Monitor thread error: {}", e);
+        },
+        ev => anyhow::bail!("Received unexpected event while waiting for screenshots: {:?}", ev),
+    }
+
+    if !paths.squiggle_bin.exists() {
+         error!("Squiggle binary (.exe) not found at {}", paths.squiggle_bin.display());
+         anyhow::bail!("Squiggle binary not found.");
+    }
+
+    let mut squiggle_args_os: Vec<String> = Vec::new();
+    if let Some(monitor_num) = squiggle_monitor_arg { 
+        squiggle_args_os.push("--".to_string());
+        squiggle_args_os.push(monitor_num.to_string());
+    }
+
+    run_command(
+        &paths.squiggle_bin, 
+        &squiggle_args_os.iter().map(|s| s.as_str()).collect::<Vec<_>>(),
+        None,
+        None,
+    )
+    .context("Failed to run squiggle")?;
+
+    let final_output_path: PathBuf;
+    match rx.recv_timeout(Duration::from_secs(60 * 5))
+        .context("Timeout or error waiting for squiggle output from monitor thread")?
+    {
+        MonitorEvent::SquiggleFinished { output_path } => {
+            final_output_path = output_path;
+        },
+        MonitorEvent::Error(e) => {
+            error!("Monitor thread reported error during squiggle wait: {}", e);
+            anyhow::bail!("Monitor thread error: {}", e);
+        },
+        ev => anyhow::bail!("Received unexpected event while waiting for squiggle output: {:?}", ev),
+    }
+
+    if !paths.electron_exe.exists() {
+         error!("SpatialShot UI executable (.exe) not found at {}", paths.electron_exe.display());
+        anyhow::bail!("SpatialShot UI executable not found.");
+    }
+
+    let output_path_str = final_output_path.to_str()
+        .context("Squiggle output path is not valid UTF-8")?;
+
+    spawn_command(
+        &paths.electron_exe, 
+        &[output_path_str],
+        None,
+        None,
+    )
+    .context("Failed to spawn spatialshot UI.")?;
+
+    Ok(())
 }
