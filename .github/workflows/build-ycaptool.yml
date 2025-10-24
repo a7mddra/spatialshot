@@ -31,7 +31,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.QT_INSTALL_DIR }}
-          key: qt-static-linux-${{ env.QT_VERSION }}-${{ runner.os }}-${{ hashFiles('ycaptool.pro') }}
+          key: qt-static-linux-${{ env.QT_VERSION }}-${{ runner.os }}-${{ hashFiles('packages/ycaptool/ycaptool.pro') }}
 
       - name: Download and build Qt static if not cached
         if: ${{ steps.cache-qt.outputs.cache-hit != 'true' }}
@@ -46,6 +46,7 @@ jobs:
       - name: Build ycaptool
         run: |
           export PATH="${{ env.QT_INSTALL_DIR }}/bin:$PATH"
+          cd packages/ycaptool # <-- FIX 1: Change to the project directory
           qmake ycaptool.pro
           make -j$(nproc)
 
@@ -53,4 +54,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ycaptool-linux
-          path: ycaptool
+          path: packages/ycaptool/ycaptool
