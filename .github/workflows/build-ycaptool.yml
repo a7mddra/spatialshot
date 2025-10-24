@@ -1,4 +1,4 @@
-name: Build ycaptool (Full Static)
+name: Build ycaptool (Static)
 
 on:
   push:
@@ -11,9 +11,6 @@ env:
   QT_VERSION: 6.8.3
 
 jobs:
-  # ====================================================================
-  # JOB 1: Build Static Qt from Source
-  # ====================================================================
   build-qt-static:
     runs-on: ubuntu-latest
     
@@ -120,6 +117,9 @@ jobs:
           -DQT_FEATURE_network=OFF \
           -DQT_FEATURE_opengl=ON \
           -DQT_FEATURE_printsupport=OFF \
+          -DQT_FEATURE_gui=ON \
+          -DQT_FEATURE_widgets=OFF \
+          -DQT_HOST_PATH=$WORKSPACE_UNIX/qt6-install \
           -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF
       shell: bash
 
@@ -146,7 +146,7 @@ jobs:
           -G Ninja \
           -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
           -DCMAKE_PREFIX_PATH=$WORKSPACE_UNIX/qt6-install \
-          -DCMAKE_INSTALL_PREFIX=$WORKSPACE_UNIX/qt6-install \
+          -CMAKE_INSTALL_PREFIX=$WORKSPACE_UNIX/qt6-install \
           -DBUILD_SHARED_LIBS=OFF \
           -DQT_BUILD_EXAMPLES=OFF \
           -DQT_BUILD_TESTS=OFF
@@ -164,7 +164,15 @@ jobs:
         ninja install
       shell: bash
 
-    - name: Create build artifact
+    - name: Verify Qt installation
+      run: |
+        echo "Checking Qt6 static libraries and qmake..."
+        find ${{ github.workspace }}/qt6-install -name "libQt6*.a" | head -10
+        find ${{ github.workspace }}/qt6-install -name "qmake"
+        find ${{ github.workspace }}/qt6-install -name "linux-g++" -type d
+      shell: bash
+
+    - name: Create Qt6 artifact
       run: |
         cd ${{ github.workspace }}
         tar -czf qt6-static-linux.tar.gz -C qt6-install .
@@ -177,46 +185,55 @@ jobs:
         path: qt6-static-linux.tar.gz
         retention-days: 1
 
-  # ====================================================================
-  # JOB 2: Build ycaptool using the Static Qt
-  # ====================================================================
   build-ycaptool:
     runs-on: ubuntu-latest
     needs: build-qt-static
 
     steps:
-      - name: Checkout ycaptool repository
-        uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      - name: Download static Qt build
-        uses: actions/download-artifact@v4
-        with:
-          name: qt6-static-linux
+    - name: Download static Qt build
+      uses: actions/download-artifact@v4
+      with:
+        name: qt6-static-linux
+        path: qt6-static
 
-      - name: Extract Qt build
-        run: |
-          mkdir -p qt-static
-          tar -xzf qt6-static-linux.tar.gz -C qt-static
-          rm qt6-static-linux.tar.gz
+    - name: Extract Qt build
+      run: |
+        mkdir -p qt-static
+        tar -xzf qt6-static/qt6-static-linux.tar.gz -C qt-static
+        rm -rf qt6-static
+      shell: bash
 
-      - name: Modify .pro for static build
-        run: |
-          cd packages/ycaptool
-          echo "CONFIG += static" >> ycaptool.pro
-          echo "QTPLUGIN += qwayland-generic qwayland-egl" >> ycaptool.pro
+    - name: Install build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential libgl1-mesa-dev libdbus-1-dev
+      shell: bash
 
-      - name: Build ycaptool
-        run: |
-          export PATH=$GITHUB_WORKSPACE/qt-static/bin:$PATH
-          
-          cd packages/ycaptool
-          
-          echo "Using qmake from: $(which qmake)"
-          qmake ycaptool.pro
-          make -j$(nproc)
+    - name: Build ycaptool
+      env:
+        QMAKE_SPEC: linux-g++
+      run: |
+        export PATH=$GITHUB_WORKSPACE/qt-static/bin:$PATH
+        export QMAKE=$GITHUB_WORKSPACE/qt-static/bin/qmake
+        cd packages/ycaptool
+        
+        echo "Using qmake from: $(which qmake)"
+        $QMAKE ycaptool.pro -spec $QMAKE_SPEC CONFIG+=static QTPLUGIN+=qwayland-generic,qwayland-egl
+        make -j$(nproc)
+      shell: bash
 
-      - name: Upload ycaptool binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: ycaptool-linux-static
-          path: packages/ycaptool/ycaptool
+    - name: Verify static binary
+      run: |
+        echo "Checking dependencies of ycaptool..."
+        ldd packages/ycaptool/ycaptool || echo "No dynamic dependencies (static binary)"
+      shell: bash
+
+    - name: Upload ycaptool binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: ycaptool-linux-static
+        path: packages/ycaptool/ycaptool
+        retention-days: 7
