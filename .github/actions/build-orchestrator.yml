@@ -1,43 +1,35 @@
+# place at .github/workflows/build-orchestrator.yml
+
 name: Build Orchestrator
 
 on:
-  # Run on pushes and PRs to main
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  # Run when a new release is created
   release:
     types: [ created ]
 
 jobs:
   build:
-    # Run this job on the OS specified in the matrix
     runs-on: ${{ matrix.os }}
     
     strategy:
-      # Don't cancel all jobs if one fails
       fail-fast: false
       matrix:
         include:
-          # # --- Linux x86_64 ---
-          # - os: ubuntu-latest
-          #   target: x86_64-unknown-linux-gnu
-          #   artifact-name: spatialshot-orchestrator-linux-x86_64
-          #   archive-ext: tar.gz
-          #   binary-name: spatialshot-orchestrator
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact-name: spatialshot-orchestrator-linux-x86_64
+            archive-ext: tar.gz
+            binary-name: spatialshot-orchestrator
             
-          # # --- Windows x86_64 ---
-          # - os: windows-latest
-          #   target: x86_64-pc-windows-msvc
-          #   artifact-name: spatialshot-orchestrator-windows-x86_64
-          #   archive-ext: zip
-          #   binary-name: spatialshot-orchestrator.exe
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact-name: spatialshot-orchestrator-windows-x86_64
+            archive-ext: zip
+            binary-name: spatialshot-orchestrator.exe
             
-          # --- macOS x86_64 (Intel) ---
-          # We use macos-12 because it's an x86_64 runner,
-          # which matches the x86_64-apple-darwin target.
-          # macos-latest is ARM64 and would require cross-compiling.
           - os: macos-latest 
             target: x86_64-apple-darwin
             artifact-name: spatialshot-orchestrator-macos-x86_64
@@ -55,12 +47,9 @@ jobs:
           target: ${{ matrix.target }}
 
       - name: Cache Cargo dependencies
-        # Use Swatinem/rust-cache for faster builds
         uses: Swatinem/rust-cache@v2
 
       - name: Build release binary
-        # Build the Rust binary in release mode
-        # The 'profile.release' settings in Cargo.toml will be applied
         run: cargo build --release --target ${{ matrix.target }}
         working-directory: packages/orchestrator
 
@@ -74,7 +63,6 @@ jobs:
           cp packages/orchestrator/target/${{ matrix.target }}/release/${{ matrix.binary-name }} dist/
 
       - name: Archive artifact (Linux/macOS)
-        # Only run this step on non-Windows runners
         if: runner.os != 'Windows'
         shell: bash
         run: |
@@ -85,7 +73,6 @@ jobs:
           tar -czf ${{ matrix.artifact-name }}.${{ matrix.archive-ext }} -C dist .
         
       - name: Archive artifact (Windows)
-        # Only run this step on the Windows runner
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
@@ -93,17 +80,13 @@ jobs:
           Compress-Archive -Path dist/* -DestinationPath ${{ matrix.artifact-name }}.${{ matrix.archive-ext }}
 
       - name: Upload build artifact
-        # Upload the archive as an artifact for this workflow run
-        # This is useful for PRs and testing
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact-name }}
           path: ${{ matrix.artifact-name }}.${{ matrix.archive-ext }}
 
       - name: Upload to GitHub Release
-        # Only run this step if the trigger was a 'release' event
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
-          # Upload the final archive file to the release page
           files: ${{ matrix.artifact-name }}.${{ matrix.archive-ext }}
