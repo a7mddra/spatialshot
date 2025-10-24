@@ -39,9 +39,9 @@ if [ "$session" = "wayland" ]; then
     echo "Wayland session detected — using ycaptool..."
     ycaptool_fallback="${XDG_DATA_HOME:-$HOME/.local/share}/spatialshot/bin/ycaptool"
     if command -v ycaptool &> /dev/null; then
-        exec ycaptool # <-- FIX: Added exec
+        exec ycaptool
     elif [ -x "$ycaptool_fallback" ]; then
-        exec "$ycaptool_fallback" # <-- FIX: Added exec
+        exec "$ycaptool_fallback"
     else
         echo "Error: ycaptool not found in PATH or at '$ycaptool_fallback'." >&2
         exit 1
