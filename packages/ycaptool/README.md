@@ -1,24 +1,39 @@
 # ycaptool
 
-`ycaptool` is a screenshot utility for Wayland designed for developers. It leverages the Flameshot binary to provide a programmatic way to capture screenshots.
+`ycaptool` is a lightweight, standalone screenshot utility for Wayland environments, tailored for developers needing automated, multi-monitor captures.
 
 ## Features
 
-*   **Wayland Screenshot Capture:** Automates the process of taking screenshots in a Wayland session.
-*   **Multi-display Support:** A GTK-based GUI allows you to select a specific display for capture in multi-monitor setups.
-*   **Silent Operation:** System sounds are temporarily muted during capture to suppress the shutter sound.
-*   **Flameshot Integration:** Uses the powerful Flameshot tool for the actual screen capture.
+- **Wayland-Native Capture:** Uses xdg-desktop-portal for GNOME/KDE compatibility; falls back to `grim` and `wlr-randr` for wlroots-based compositors (e.g., Sway, Hyprland).
+- **Multi-Monitor Support:** Automatically detects and captures each display, saving as `1.png`, `2.png`, etc.
+- **Silent Operation:** Temporarily mutes system audio to suppress shutter sounds during capture, restoring original state afterward.
 
-## Components
+## Requirements
 
-The tool is a standalone C++ and GTK-based application, `ycaptool`. It intelligently detects when multiple displays are present and shows a selector GUI. For single-display setups, it proceeds to capture immediately. It bundles the `flameshot` binary, which it uses for the actual screen capture process.
+- Qt 6 (with Core, Gui, and DBus modules)
+- Wayland session
+- For wlroots fallback: `grim` and `wlr-randr` installed
+- Audio muting: One of `pactl` (PulseAudio), `wpctl` (PipeWire), or `amixer` (ALSA)
 
 ## Building
 
-To build the `ycaptool` binary, run the `build.sh` script:
+Ensure Qt6 development packages are installed (e.g., `sudo apt install qt6-base-dev libqt6dbus6` on Debian-based systems).
+
+Run the build script:
 
 ```bash
 ./build.sh
 ```
 
-This will produce the `ycaptool` binary in the `bin` directory.
+This compiles the tool, installs `ycaptool` to `/dist`, and cleans up the local binary.
+
+## Usage
+
+Run `ycaptool` in a terminal. Screenshots are saved to `$SC_SAVE_PATH` if set, or `~/.cache/spatialshot/tmp` by default.
+
+Example:
+```bash
+SC_SAVE_PATH=/tmp/screenshots ycaptool
+```
+
+Output files: `1.png`, `2.png`, etc., one per monitor. The directory is recreated fresh each run.

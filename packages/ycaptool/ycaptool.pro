@@ -1,0 +1,12 @@
+QT += core gui dbus
+CONFIG += c++17 console
+TARGET = ycaptool
+SOURCES += src/main.cpp \
+    src/shell.cpp \
+    src/audiomanager.cpp \
+    src/utils.cpp \
+    src/receiver.cpp
+HEADERS += src/shell.h \
+    src/audiomanager.h \
+    src/utils.h \
+    src/receiver.h
