@@ -1,60 +1,231 @@
-# place at .github/workflows/build-ycaptool.yml
-
-name: Build ycaptool
+name: Build ycaptool (Full Static)
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch: # Manual trigger
+
+env:
+  BUILD_TYPE: Release
 
 jobs:
-  build:
+  # ====================================================================
+  # JOB 1: Build Static Qt from Source
+  # ====================================================================
+  build-qt-static:
     runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Install dependencies (Linux)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          ninja-build \
+          git \
+          python3 \
+          libfontconfig1-dev \
+          libfreetype6-dev \
+          libx11-dev \
+          libx11-xcb-dev \
+          libxext-dev \
+          libxfixes-dev \
+          libxi-dev \
+          libxrender-dev \
+          libxcb1-dev \
+          libxcb-cursor-dev \
+          libxcb-glx0-dev \
+          libxcb-keysyms1-dev \
+          libxcb-image0-dev \
+          libxcb-shm0-dev \
+          libxcb-icccm4-dev \
+          libxcb-sync-dev \
+          libxcb-xfixes0-dev \
+          libxcb-shape0-dev \
+          libxcb-randr0-dev \
+          libxcb-render-util0-dev \
+          libxcb-util-dev \
+          libxcb-xinerama0-dev \
+          libxcb-xkb-dev \
+          libxkbcommon-dev \
+          libxkbcommon-x11-dev \
+          libgl1-mesa-dev \
+          libglu1-mesa-dev \
+          libdbus-1-dev # <-- FIX: Added dependency for dbus
 
-    env:
-      QT_VERSION: 6.8.0
+    - name: Get latest Qt6 release tag
+      id: qt6-version
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        set -euo pipefail
+        # FIX 1: Query qt/qt6 repository, not qt/qt5
+        resp=$(curl -sS -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/qt/qt6/releases/latest")
+        tag=$(echo "$resp" | jq -r '.tag_name // empty')
+        
+        if [ -z "$tag" ]; then
+          echo "Error: Could not fetch Qt6 release tag."
+          echo "API response:"
+          echo "$resp" | jq -C '.'
+          exit 1
+        fi
+
+        echo "Latest Qt6 release: $tag"
+        echo "tag=$tag" >> $GITHUB_OUTPUT
+        VERSION=${tag#v}
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+      shell: bash
+      
+    - name: Cache Qt6 source
+      id: cache-qt6-source
+      uses: actions/cache@v4
+      with:
+        path: qt6-source
+        key: qt6-source-${{ steps.qt6-version.outputs.tag }}-linux
+
+    - name: Download Qt6 source code
+      if: steps.cache-qt6-source.outputs.cache-hit != 'true'
+      run: |
+        echo "Downloading Qt6 ${{ steps.qt6-version.outputs.tag }}"
+        VERSION="${{ steps.qt6-version.outputs.version }}"
+        MAJOR_MINOR=$(echo "$VERSION" | cut -d. -f1-2)
+        
+        mkdir -p qt6-source
+        cd qt6-source
+        
+        echo "Downloading qtbase..."
+        curl -L -o qtbase.tar.xz "https://download.qt.io/official_releases/qt/$MAJOR_MINOR/$VERSION/submodules/qtbase-everywhere-src-$VERSION.tar.xz"
+        tar -xf qtbase.tar.xz
+        mv qtbase-everywhere-src-$VERSION qtbase
+        rm qtbase.tar.xz
+        
+        echo "Downloading qtsvg..."
+        curl -L -o qtsvg.tar.xz "https://download.qt.io/official_releases/qt/$MAJOR_MINOR/$VERSION/submodules/qtsvg-everywhere-src-$VERSION.tar.xz"
+        tar -xf qtsvg.tar.xz
+        mv qtsvg-everywhere-src-$VERSION qtsvg
+        rm qtsvg.tar.xz
+      shell: bash
+
+    - name: Configure CMake for Qt6 Base
+      env:
+        WORKSPACE: ${{ github.workspace }}
+      run: |
+        export WORKSPACE_UNIX=${WORKSPACE//\\//}
+        mkdir -p qt6-source/build-base
+        cd qt6-source/build-base
+        cmake ../qtbase \
+          -G Ninja \
+          -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+          -DCMAKE_INSTALL_PREFIX=$WORKSPACE_UNIX/qt6-install \
+          -DBUILD_SHARED_LIBS=OFF \
+          -DQT_BUILD_EXAMPLES=OFF \
+          -DQT_BUILD_TESTS=OFF \
+          -DQT_FEATURE_static=ON \
+          -DQT_FEATURE_shared=OFF \
+          -DQT_FEATURE_framework=OFF \
+          -DQT_FEATURE_dbus=ON \ # <-- FIX 2: Enabled dbus for ycaptool
+          -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF \
+          -DQT_FEATURE_png=OFF \
+          -DQT_FEATURE_jpeg=OFF \
+          -DQT_FEATURE_sql=OFF \
+          -DQT_FEATURE_network=OFF \
+          -DQT_FEATURE_opengl=OFF \
+          -DQT_FEATURE_printsupport=OFF
+      shell: bash
+
+    - name: Build Qt6 Base
+      run: |
+        cd qt6-source/build-base
+        ninja -j$(nproc)
+      shell: bash
+
+    - name: Install Qt6 Base
+      run: |
+        cd qt6-source/build-base
+        ninja install
+      shell: bash
+
+    - name: Configure CMake for Qt6 SVG
+      env:
+        WORKSPACE: ${{ github.workspace }}
+      run: |
+        export WORKSPACE_UNIX=${WORKSPACE//\\//}
+        mkdir -p qt6-source/build-svg
+        cd qt6-source/build-svg
+        cmake ../qtsvg \
+          -G Ninja \
+          -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+          -DCMAKE_PREFIX_PATH=$WORKSPACE_UNIX/qt6-install \
+          -DCMAKE_INSTALL_PREFIX=$WORKSPACE_UNIX/qt6-install \
+          -DBUILD_SHARED_LIBS=OFF \
+          -DQT_BUILD_EXAMPLES=OFF \
+          -DQT_BUILD_TESTS=OFF
+      shell: bash
+
+    - name: Build Qt6 SVG
+      run: |
+        cd qt6-source/build-svg
+        ninja -j$(nproc)
+      shell: bash
+
+    - name: Install Qt6 SVG
+      run: |
+        cd qt6-source/build-svg
+        ninja install
+      shell: bash
+
+    - name: Create build artifact
+      run: |
+        cd ${{ github.workspace }}
+        tar -czf qt6-static-linux.tar.gz -C qt6-install .
+      shell: bash
+      
+    - name: Upload Qt6 static build
+      uses: actions/upload-artifact@v4
+      with:
+        name: qt6-static-linux
+        path: qt6-static-linux.tar.gz
+        retention-days: 1
+
+  # ====================================================================
+  # JOB 2: Build ycaptool using the Static Qt
+  # ====================================================================
+  build-ycaptool:
+    runs-on: ubuntu-latest
+    needs: build-qt-static # This job waits for the first one
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout ycaptool repository
+        uses: actions/checkout@v4
 
-      - name: Set QT_INSTALL_DIR
-        run: echo "QT_INSTALL_DIR=${{ runner.temp }}/qt-static" >> $GITHUB_ENV
-
-      - name: Install dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y build-essential libgl1-mesa-dev libfontconfig1-dev libfreetype6-dev libx11-dev libxext-dev libxfixes-dev libxi-dev libxrender-dev libxcb1-dev libx11-xcb-dev libxcb-glx0-dev libxkbcommon-x11-dev libxkbcommon-dev libdbus-1-dev python3 gperf bison flex
-
-      - name: Cache Qt
-        id: cache-qt
-        uses: actions/cache@v4
+      - name: Download static Qt build
+        uses: actions/download-artifact@v4
         with:
-          path: ${{ env.QT_INSTALL_DIR }}
-          # FIX 1: Correct path for cache key
-          key: qt-static-linux-${{ env.QT_VERSION }}-${{ runner.os }}-${{ hashFiles('packages/ycaptool/ycaptool.pro') }}
+          name: qt6-static-linux
 
-      - name: Download and build Qt static if not cached
-        if: ${{ steps.cache-qt.outputs.cache-hit != 'true' }}
+      - name: Extract Qt build
         run: |
-          wget https://download.qt.io/official_releases/qt/${QT_VERSION%.*}/${QT_VERSION}/single/qt-everywhere-src-${QT_VERSION}.tar.xz
-          tar xJf qt-everywhere-src-${QT_VERSION}.tar.xz
-          cd qt-everywhere-src-${QT_VERSION}
-          ./configure -static -release -no-pch -prefix "${{ env.QT_INSTALL_DIR }}" -skip qtwebengine -nomake tests -nomake examples -opensource -confirm-license
-          make -j$(nproc)
-          make install
+          mkdir -p qt-static
+          tar -xzf qt6-static-linux.tar.gz -C qt-static
+          rm qt6-static-linux.tar.gz
 
       - name: Build ycaptool
         run: |
-          export PATH="${{ env.QT_INSTALL_DIR }}/bin:$PATH"
-          # FIX 2: Change to the project directory before building
+          # Add the static Qt's bin directory (containing qmake) to the PATH
+          export PATH=$GITHUB_WORKSPACE/qt-static/bin:$PATH
+          
+          # Navigate to your project directory
           cd packages/ycaptool
+          
+          # Run qmake and make
+          echo "Using qmake from: $(which qmake)"
           qmake ycaptool.pro
           make -j$(nproc)
 
-      - name: Upload artifact
+      - name: Upload ycaptool binary
         uses: actions/upload-artifact@v4
         with:
-          name: ycaptool-linux
-          # FIX 3: Point to the binary's correct location
+          name: ycaptool-linux-static
           path: packages/ycaptool/ycaptool
