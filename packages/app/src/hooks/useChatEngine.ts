@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { Message, ModelType } from "../types";
+import { Message, ModelType } from "../lib/types";
 import { startNewChatStream, sendMessage } from "../services/geminiService";
 import systemPromptYaml from "../services/prompt.yml?raw";
 

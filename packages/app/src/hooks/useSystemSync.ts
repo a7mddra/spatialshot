@@ -7,7 +7,7 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { showFeedbackMessage } from "../components/utilities";
+import { showFeedbackMessage } from "../lib/utils";
 import { initializeGemini } from "../services/geminiService";
 
 export const useSystemSync = (onToggleSettings: () => void) => {

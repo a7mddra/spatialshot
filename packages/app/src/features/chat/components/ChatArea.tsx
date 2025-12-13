@@ -5,10 +5,10 @@
  */
 
 import React, { forwardRef } from "react";
-import { MsgBox } from "../DialogBox";
+import { MsgBox } from "../../../components/ui/Modal";
 import { ChatBubble } from "../ChatBubble";
 import { StreamingResponse } from "./ChatResponse";
-import { Message } from "../../../types";
+import { Message } from "../../../lib/types";
 
 interface ChatAreaProps {
   startupImage: { base64: string; mimeType: string } | null;

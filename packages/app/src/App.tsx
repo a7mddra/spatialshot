@@ -3,8 +3,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useSystemSync } from "./hooks/useSystemSync";
 import { useChatEngine } from "./hooks/useChatEngine";
-import { ChatLayout } from "./components/chat/layout/ChatLayout";
-import HelloScreen from "./components/hello/HelloScreen";
+import { ChatLayout } from "./features/chat/ChatLayout";
+import HelloScreen from "./features/onboarding/Welcome";
 
 const App: React.FC = () => {
   const [input, setInput] = useState("");

@@ -6,9 +6,9 @@
 
 import React, { ForwardedRef } from "react";
 import { Settings, RotateCw } from "lucide-react";
-import { SettingsPanel } from "./settings/SettingsPanel";
-import { ModelSelector } from "./ModelSelector";
-import LensButton from "./LensButton";
+import { SettingsPanel } from "../settings/SettingsPanel";
+import { ModelSelector } from "../../components/chat/layout/header/ModelSelector";
+import LensButton from "../../components/ui/UseLens";
 
 interface ChatHeaderProps {
   isPanelActive: boolean;

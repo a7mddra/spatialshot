@@ -12,11 +12,11 @@ import React, {
 } from "react";
 import "katex/dist/katex.min.css";
 
-import { Message } from "../../../types";
-import { ContextMenu } from "./ContextMenu";
-import { ChatHeader } from "./header/ChatHeader";
-import { ChatArea } from "./ChatArea";
-import { ChatInput } from "./ChatInput";
+import { Message } from "../../lib/types";
+import { ContextMenu } from "../../components/ui/ContextMenu";
+import { ChatHeader } from "./ChatHeader";
+import { ChatArea } from "./components/ChatArea";
+import { ChatInput } from "./components/ChatInput";
 import "./ChatLayout.css";
 
 export interface ChatLayoutProps {

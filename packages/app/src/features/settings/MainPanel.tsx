@@ -13,13 +13,13 @@ import React, {
 import { invoke } from "@tauri-apps/api/core";
 import "../../../../index.css";
 import "./SettingsPanel.css";
-import { MODELS, ModelType } from "../../../../../types";
-import { MsgBox } from "../../../DialogBox";
+import { MODELS, ModelType } from "../../lib/types";
+import { MsgBox } from "../../components/ui/Modal";
 
 // Sub-components
-import { UserInfo } from "./UserInfo";
+import { UserInfo } from "./UserProfile";
 import { MainActions } from "./MainActions";
-import { PersonalContext } from "./PersonalContext";
+import { PersonalContext } from "./ContextEditor";
 
 interface SettingsPanelProps {
   currentPrompt: string;
